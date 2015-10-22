@@ -1,0 +1,42 @@
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
+
+#define IDD_ABOUTBOX                            103
+#define IDM_ABOUT                               104
+#define IDM_EXIT                                105
+#define IDI_TZT                                 107
+#define IDC_TZT                                 109
+#define IDD_DRIVER_TWEAKS                       131
+#define IDI_NV                                  134
+#define IDD_TZT                                 135
+#define IDC_VSYNC                               1000
+#define IDC_BORDER_WINDOW                       1001
+#define IDC_BORDERLESS_WINDOW                   1002
+#define IDC_FULLSCREEN                          1003
+#define IDC_MATCH_DESKTOP                       1004
+#define IDC_REFRESH_RATE                        1008
+#define IDC_ANISOTROPY                          1030
+#define IDC_TEXTURE_RES                         1035
+#define IDC_LEVEL_OF_DETAIL                     1044
+#define IDC_SHADOW_QUALITY                      1045
+#define IDC_GPUINFO                             1054
+#define IDC_SLI_MODE                            1056
+#define IDC_POWER_POLICY                        1057
+#define IDC_PRERENDERED_FRAMES                  1058
+#define IDC_NV_DRIVER_TWEAKS                    1061
+#define IDC_NEGATIVE_LOD                        1063
+#define IDC_QUALITY_DESC                        1065
+#define IDC_ADAPTIVE_VSYNC                      1066
+#define IDC_SMOOTH_VSYNC                        1067
+#define IDC_COMBO5                              1068
+#define IDC_NUKE_CONFIG                         1069
+#define IDC_DEBUG_GROUP                         1070
+#define IDC_GPU_GROUP                           1071
+#define IDC_BACKUP_CONFIG                       1072
+#define IDC_RESTORE_CONFIG                      1073
+#define IDC_RESOLUTION                          1074
+#define IDC_FXAA_LEVEL                          40000
+#define IDS_APP_TITLE                           40000
+#define IDC_DRAW_DISTANCE                       40001
+#define IDC_TZF_LOG                             40002
