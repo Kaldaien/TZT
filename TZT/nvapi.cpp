@@ -40,6 +40,7 @@
 using namespace tzt;
 using namespace tzt::NVAPI;
 
+static bool nvapi_laptop = false;
 static bool nvapi_silent = false;
 //static bool support_mfaa = false;
 
@@ -171,6 +172,29 @@ private:
 //HWND hWndUseMFAA;
 } *misc = nullptr;
 
+class nvcfg_Optimus
+{
+public:
+  nvcfg_Optimus (void);
+
+  bool setup_ui      (HWND hDlg);
+
+  int  poll_shim_mode    (void);
+  int  poll_shim_options (void);
+
+  //protected:
+  NVDRS_SETTING shim_mode;
+  NVDRS_SETTING shim_mode_mc;
+  NVDRS_SETTING shim_options;
+
+private:
+  HWND hWndShimMode;
+  HWND hWndOverrideApp;
+  HWND hWndAllowAsyncPresent;
+  HWND hWndIgnoreOEM;
+  HWND hWndInvertPriority;
+} *optimus = nullptr;
+
 int
 tzt::NVAPI::CountPhysicalGPUs (void)
 {
@@ -184,6 +208,17 @@ tzt::NVAPI::CountPhysicalGPUs (void)
       NVAPI_CALL (EnumPhysicalGPUs (gpus, &gpu_count));
 
       nv_gpu_count = gpu_count;
+
+      // Detect if this is a laptop...
+      for (int i = 0; i < gpu_count; i++) {
+        NV_SYSTEM_TYPE sys_type;
+        NVAPI_CALL (GPU_GetSystemType (gpus [i], &sys_type));
+
+        if (sys_type == NV_SYSTEM_TYPE_LAPTOP) {
+          nvapi_laptop = true;
+          break;
+        }
+      }
     }
     else {
       nv_gpu_count = 0;
@@ -342,6 +377,10 @@ tzt::NVAPI::EnumGPUs_DXGI (void)
 
     NVAPI_CALL (DRS_GetSetting (hSession, hProfile, LODBIASADJUST_ID,               &lodbias->adjust));
     NVAPI_CALL (DRS_GetSetting (hSession, hProfile, PS_TEXFILTER_NO_NEG_LODBIAS_ID, &lodbias->allow_negative));
+
+    NVAPI_CALL (DRS_GetSetting (hSession, hProfile, SHIM_MCCOMPAT_ID,          &optimus->shim_mode_mc));
+    NVAPI_CALL (DRS_GetSetting (hSession, hProfile, SHIM_RENDERING_MODE_ID,    &optimus->shim_mode));
+    NVAPI_CALL (DRS_GetSetting (hSession, hProfile, SHIM_RENDERING_OPTIONS_ID, &optimus->shim_options));
 
     NVAPI_VERBOSE ();
   }
@@ -592,6 +631,110 @@ nvcfg_LODBias::poll_allow_negative (void)
 }
 
 
+
+nvcfg_Optimus::nvcfg_Optimus (void)
+{
+  shim_mode.version    = NVDRS_SETTING_VER;
+  shim_mode_mc.version = NVDRS_SETTING_VER;
+  shim_options.version = NVDRS_SETTING_VER;
+}
+
+bool
+nvcfg_Optimus::setup_ui (HWND hDlg)
+{
+  hWndAllowAsyncPresent = GetDlgItem (hDlg, IDC_ASYNC_PRESENT);
+  hWndShimMode          = GetDlgItem (hDlg, IDC_SHIM_MODE);
+  hWndOverrideApp       = GetDlgItem (hDlg, IDC_SHIM_APP_OVERRIDE);
+  hWndIgnoreOEM         = GetDlgItem (hDlg, IDC_IGNORE_OEM);
+  hWndInvertPriority    = GetDlgItem (hDlg, IDC_PRIORITY_INVERSION);
+
+  ComboBox_ResetContent (hWndShimMode);
+
+  ComboBox_InsertString (hWndShimMode, 0, L"Integrated Only");
+  ComboBox_InsertString (hWndShimMode, 1, L"Dynamic Switching");
+  ComboBox_InsertString (hWndShimMode, 2, L"Auto Select");
+
+  if (shim_mode.u32CurrentValue & 0x1)
+    ComboBox_SetCurSel (hWndShimMode, 1);
+
+  else if (shim_mode.u32CurrentValue & 0x10)
+    ComboBox_SetCurSel (hWndShimMode, 2);
+
+  else
+    ComboBox_SetCurSel (hWndShimMode, 0);
+
+  bool override = shim_mode.u32CurrentValue & SHIM_RENDERING_MODE_OVERRIDE_BIT;
+  Button_SetCheck (hWndOverrideApp, override);
+
+  bool async_present = 
+    ! (shim_options.u32CurrentValue &
+       SHIM_RENDERING_OPTIONS_DISABLE_ASYNC_PRESENT);
+  Button_SetCheck (hWndAllowAsyncPresent, async_present);
+
+  bool ignore_oem = 
+    (shim_options.u32CurrentValue &
+     SHIM_RENDERING_OPTIONS_IGNORE_OVERRIDES);
+  Button_SetCheck (hWndIgnoreOEM, ignore_oem);
+
+  bool invert = 
+    (shim_options.u32CurrentValue &
+     SHIM_RENDERING_OPTIONS_INVERT_FOR_MSHYBRID);
+  Button_SetCheck (hWndInvertPriority, invert);
+
+  ComboBox_Enable (hWndShimMode,          nvapi_laptop);
+  Button_Enable   (hWndAllowAsyncPresent, nvapi_laptop);
+  Button_Enable   (hWndOverrideApp,       nvapi_laptop);
+  Button_Enable   (hWndIgnoreOEM,         nvapi_laptop);
+  Button_Enable   (hWndInvertPriority,    nvapi_laptop);
+
+  return true;
+}
+
+int
+nvcfg_Optimus::poll_shim_mode (void)
+{
+  int mode = 0;
+
+  int idx = ComboBox_GetCurSel (hWndShimMode);
+
+  if (idx == 1) // Dynamic Switching
+    mode |= 0x1;
+
+  if (idx == 2) // Auto-Select
+    mode |= 0x10;
+
+  bool override = Button_GetCheck (hWndOverrideApp);
+
+  if (override)
+    mode |= SHIM_RENDERING_MODE_OVERRIDE_BIT;
+
+  return mode;
+}
+
+int
+nvcfg_Optimus::poll_shim_options (void)
+{
+  int opts = 0;
+
+  bool async_present = Button_GetCheck (hWndAllowAsyncPresent);
+
+  if (! async_present)
+    opts |= SHIM_RENDERING_OPTIONS_DISABLE_ASYNC_PRESENT;
+
+  bool ignore_oem = Button_GetCheck (hWndIgnoreOEM);
+
+  if (ignore_oem)
+    opts |= SHIM_RENDERING_OPTIONS_IGNORE_OVERRIDES;
+
+  bool invert = Button_GetCheck (hWndInvertPriority);
+
+  if (invert)
+    opts |= SHIM_RENDERING_OPTIONS_INVERT_FOR_MSHYBRID;
+
+  return opts;
+}
+
+
 nvcfg_Miscellaneous::nvcfg_Miscellaneous (void)
 {
   prerender_limit.version = NVDRS_SETTING_VER;
@@ -680,9 +823,10 @@ DriverConfigNV (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       vsync->setup_ui   (hDlg);
       lodbias->setup_ui (hDlg);
       misc->setup_ui    (hDlg);
+      optimus->setup_ui (hDlg);
 
       Edit_SetText (GetDlgItem (hDlg, IDC_QUALITY_DESC),
-        L"A negative LOD bias will sharpen textures throughout the game, but creates artifacts on glass and various other surfaces... it is intended to make signs easier to read.\r\n\r\n"
+        L"A negative LOD bias will sharpen textures throughout the game, but creates shimmering artifacts on glass and various other surfaces... it is intended to make signs easier to read.\r\n\r\n"
         );//L"MFAA requires a Maxwell \"B\"-class NVIDIA GPU (9xx series) and SLI must be disabled; enabling it here does not guarantee it will work.\n");
     }
 
@@ -799,6 +943,17 @@ void SaveDriverTweaksNV (HWND hDlg)
     NVAPI_SET_DWORD (lodbias->allow_negative, PS_TEXFILTER_NO_NEG_LODBIAS_ID, lodbias->poll_allow_negative ())
     NVAPI_CALL      (DRS_SetSetting (hSession, hProfile, &lodbias->allow_negative));
 
+    if (nvapi_laptop) {
+      NVAPI_SET_DWORD (optimus->shim_mode,    SHIM_RENDERING_MODE_ID,    optimus->poll_shim_mode ());
+      NVAPI_CALL      (DRS_SetSetting (hSession, hProfile, &optimus->shim_mode));
+
+      NVAPI_SET_DWORD (optimus->shim_mode_mc, SHIM_MCCOMPAT_ID,          optimus->poll_shim_mode ());
+      NVAPI_CALL      (DRS_SetSetting (hSession, hProfile, &optimus->shim_mode_mc));
+
+      NVAPI_SET_DWORD (optimus->shim_options, SHIM_RENDERING_OPTIONS_ID, optimus->poll_shim_options ());
+      NVAPI_CALL      (DRS_SetSetting (hSession, hProfile, &optimus->shim_options));
+    }
+
 //    if (support_mfaa) {
 //      NVAPI_SET_DWORD (misc->mfaa, MAXWELL_B_SAMPLE_INTERLEAVE_ID, misc->poll_mfaa ());
 //      NVAPI_CALL      (DRS_SetSetting (hSession, hProfile, &misc->mfaa));
@@ -854,6 +1009,7 @@ NVAPI::UnloadLibrary (void)
       delete vsync;   vsync   = nullptr;
       delete sli;     sli     = nullptr;
       delete misc;    misc    = nullptr;
+      delete optimus; optimus = nullptr;
     }
   }
 
@@ -893,6 +1049,7 @@ NVAPI::InitializeLibrary (void)
   vsync   = new nvcfg_VSYNC         ();
   lodbias = new nvcfg_LODBias       ();
   misc    = new nvcfg_Miscellaneous ();
+  optimus = new nvcfg_Optimus       ();
 
   if (! CheckDriverVersion ()) {
     TZT_MessageBox (L"WARNING:  Your display drivers are too old to play this game!\n",

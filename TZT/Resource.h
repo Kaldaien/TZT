@@ -37,6 +37,11 @@
 #define IDC_RESTORE_CONFIG                      1073
 #define IDC_RESOLUTION                          1074
 #define IDC_FXAA_LEVEL                          40000
+#define IDC_SHIM_MODE                           40000
 #define IDS_APP_TITLE                           40000
 #define IDC_DRAW_DISTANCE                       40001
+#define IDC_SHIM_APP_OVERRIDE                   40001
+#define IDC_ASYNC_PRESENT                       40002
 #define IDC_TZF_LOG                             40002
+#define IDC_PRIORITY_INVERSION                  40003
+#define IDC_IGNORE_OEM                          40004

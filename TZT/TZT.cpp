@@ -40,10 +40,10 @@
 
 using namespace tzt;
 
-// Match the game's setup
-extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
+///// Match the game's setup (Arkham Knight)
+////extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
 
-#define TZT_VERSION_STR L"0.5.0"
+#define TZT_VERSION_STR L"0.6.0"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -591,7 +591,7 @@ setup_config_status (HWND hDlg)
     pDS->SetCooperativeLevel (hDlg, DSSCL_EXCLUSIVE);
     pwszStat += swprintf (pwszStat, L"Success!\r\n");
 
-    pwszStat += swprintf (pwszStat, L" >> Retreiving Channel Configuration...\t");
+    pwszStat += swprintf (pwszStat, L" >> Retrieving Channel Configuration...\t");
     DWORD dwSpeakerConfig;
     pDS->GetSpeakerConfig (&dwSpeakerConfig);
     pwszStat += swprintf (pwszStat, L"%d\t(%s)\r\n",
@@ -599,11 +599,13 @@ setup_config_status (HWND hDlg)
                       dsound_channel_config_name (
                                 DSSPEAKER_CONFIG (dwSpeakerConfig)));
 
-    pwszStat += swprintf (pwszStat, L" >> Retreiving Speaker Geometry...\t\t");
+#if 0
+    pwszStat += swprintf (pwszStat, L" >> Retrieving Speaker Geometry...\t\t");
     pwszStat += swprintf (pwszStat, L"%d\t(%s)\r\n",
         DSSPEAKER_GEOMETRY (dwSpeakerConfig),
       dsound_speaker_geometry_name (
         DSSPEAKER_GEOMETRY (dwSpeakerConfig)).c_str ());
+#endif
 
     DSCAPS sound_caps;
     if (SUCCEEDED (pDS->GetCaps (&sound_caps))) {
