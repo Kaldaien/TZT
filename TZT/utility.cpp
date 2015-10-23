@@ -143,15 +143,9 @@ void
 TZT_DeleteAllConfigFiles (void)
 {
   // Strip Read-Only
-#if 0
-  BMT_SetNormalFileAttribs (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.ini"));
-  BMT_SetNormalFileAttribs (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.ini"));
-  BMT_SetNormalFileAttribs (std::wstring (BMT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.xml"));
+  TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"));
 
-  DeleteFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.ini").c_str ());
-  DeleteFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.ini").c_str ());
-  DeleteFile (std::wstring (BMT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.xml").c_str ());
-#endif
+  DeleteFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG").c_str ());
 }
 
 bool
@@ -159,7 +153,7 @@ TZT_HasBackupConfigFiles (void)
 {
   WIN32_FIND_DATA FindFileData;
 
-  if (FindFirstFile (std::wstring (TZT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.bmt").c_str (), &FindFileData) != INVALID_HANDLE_VALUE)
+  if (FindFirstFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT").c_str (), &FindFileData) != INVALID_HANDLE_VALUE)
     return true;
 
   return false;
@@ -196,51 +190,29 @@ TZT_FullCopy (std::wstring from, std::wstring to)
 void
 TZT_CreateBackupConfig (void)
 {
-  TZT_FullCopy ( std::wstring (TZT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.xml"),
-                 std::wstring (TZT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.bmt") );
-
-#if 0
-  BMT_FullCopy ( std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.ini"),
-                 std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.bmt") );
-
-  BMT_FullCopy ( std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.ini"),
-                 std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.bmt") );
-#endif
+  TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"),
+                 std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT") );
 }
 
 void
 TZT_RestoreConfigFiles (void)
 {
-  TZT_FullCopy ( std::wstring (TZT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.bmt"),
-                 std::wstring (TZT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.xml") );
-
-#if 0
-  BMT_FullCopy ( std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.bmt"),
-                 std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.ini") );
-
-  BMT_FullCopy ( std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.bmt"),
-                 std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.ini") );
+  TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"),
+                 std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG") );
 
   // Strip Read-Only
-  BMT_SetNormalFileAttribs (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.bmt"));
-  BMT_SetNormalFileAttribs (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.bmt"));
-  BMT_SetNormalFileAttribs (std::wstring (BMT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.bmt"));
+  TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"));
 
-  DeleteFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.bmt").c_str ());
-  DeleteFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmEngine.bmt").c_str ());
-  DeleteFile (std::wstring (BMT_GetDocumentsDir () + L"\\WB Games\\Batman Arkham Knight\\GFXSettings.BatmanArkhamKnight.bmt").c_str ());
-#endif
+  DeleteFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT").c_str ());
 }
 
 // Gets the timestamp on the current backup file
 std::wstring
 TZT_GetBackupFileTime (void)
 {
-  return L"";
-#if 0
   WIN32_FIND_DATA FindFileData;
 
-  HANDLE hFileBackup = FindFirstFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.bmt").c_str (), &FindFileData);
+  HANDLE hFileBackup = FindFirstFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT").c_str (), &FindFileData);
 
   FindClose (hFileBackup);
 
@@ -262,24 +234,15 @@ TZT_GetBackupFileTime (void)
   date_time += wszFileTime;
 
   return date_time;
-#endif
 }
 
 // Gets the timestamp on the current config file
 std::wstring
 TZT_GetConfigFileTime (void)
 {
-  return L"";
-
-#if 0
-  //
-  // XXX: It's possible that one file is newer than another, but for now let's
-  //        assume SystemSettings.ini is always the newest and then see how
-  //          much trouble that assumption gets us into down the line ;)
-  //
   WIN32_FIND_DATA FindFileData;
 
-  HANDLE hFileBackup = FindFirstFile (std::wstring (bmt::XML::install_path + L"..\\..\\BMGame\\Config\\BmSystemSettings.ini").c_str (), &FindFileData);
+  HANDLE hFileBackup = FindFirstFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG").c_str (), &FindFileData);
 
   FILETIME   ftModified;
   FileTimeToLocalFileTime (&FindFileData.ftLastWriteTime, &ftModified);
@@ -301,7 +264,6 @@ TZT_GetConfigFileTime (void)
   date_time += wszFileTime;
 
   return date_time;
-#endif
 }
 
 void

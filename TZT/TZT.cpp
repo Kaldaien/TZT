@@ -43,7 +43,7 @@ using namespace tzt;
 ///// Match the game's setup (Arkham Knight)
 ////extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
 
-#define TZT_VERSION_STR L"0.6.0"
+#define TZT_VERSION_STR L"0.6.1"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -805,7 +805,7 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       refresh_rate->register_to_cfg (config.get_file (), L"refreshRateHz");
       refresh_rate->load ();
 
-      res_x->register_to_cfg (config.get_file (), L"?resolution_X");
+      res_x->register_to_cfg (config.get_file (), L"resolution_X");
       res_x->load ();
 
       res_y->register_to_cfg (config.get_file (), L"resolution_Y");
@@ -1123,25 +1123,25 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         // System to make an automatic backup if INI files at save-time
         if (! TZT_HasBackupConfigFiles ()) {
           // So, no backups exist - maybe the user doesn't want backups?
-          if (! decline_backup->get_value ()) {
-            int status =
-              TZT_MessageBox (L"No backup configuration files were detected, would you like to backup your configuration now?\n\n\tIf you press [No], you will never be prompted again.",
-                              L"Create Backup Configuration Files?",
-                              MB_YESNOCANCEL | MB_ICONQUESTION);
+          //if (! decline_backup->get_value ()) {
+            //int status =
+              //TZT_MessageBox (L"No backup configuration files were detected, would you like to backup your configuration now?\n\n\tIf you press [No], you will never be prompted again.",
+                              //L"Create Backup Configuration Files?",
+                              //MB_YESNOCANCEL | MB_ICONQUESTION);
 
-            if (status == IDCANCEL)
-              return (INT_PTR)TRUE;
+            //if (status == IDCANCEL)
+              //return (INT_PTR)TRUE; 
 
-            if (status == IDYES) {
+            //if (status == IDYES) {
               TZT_CreateBackupConfig    ();
-              decline_backup->set_value (false);
-            }
-            else {
-              decline_backup->set_value (true);
-            }
+              //decline_backup->set_value (false);
+            //}
+            //else {
+              //decline_backup->set_value (true);
+            //}
 
-            decline_backup->store ();
-          }
+            //decline_backup->store ();
+          //}
         }
 
         std::wstring config_path (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\");
