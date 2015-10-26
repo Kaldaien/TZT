@@ -43,7 +43,7 @@ using namespace tzt;
 ///// Match the game's setup (Arkham Knight)
 ////extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
 
-#define TZT_VERSION_STR L"0.6.1"
+#define TZT_VERSION_STR L"0.6.2"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -569,6 +569,7 @@ dsound_speaker_geometry_name (DWORD dwGeometry)
   }
 }
 
+#include <initguid.h>
 #pragma comment (lib, "ksproxy.lib")
 #include <ks.h>
 //#include <ksproxy.h>
@@ -587,8 +588,7 @@ setup_config_status (HWND hDlg)
 
   LPDIRECTSOUND8 pDS;
   if (SUCCEEDED (DirectSoundCreate8 (NULL, &pDS, NULL))) {
-    pDS->Initialize          (NULL);
-    pDS->SetCooperativeLevel (hDlg, DSSCL_EXCLUSIVE);
+    pDS->Initialize (NULL);
     pwszStat += swprintf (pwszStat, L"Success!\r\n");
 
     pwszStat += swprintf (pwszStat, L" >> Retrieving Channel Configuration...\t");
@@ -642,18 +642,33 @@ setup_config_status (HWND hDlg)
                          NULL, (void **)&pAudioClient )
                       )
            ) {
-          WAVEFORMATEX* pMixFormat;
-          pAudioClient->GetMixFormat (&pMixFormat);
+          WAVEFORMATEX*   pMixFormat;
+          IPropertyStore* pStore;
+          PROPVARIANT     property;
 
-          pwszStat += swprintf (pwszStat, L"---\r\n * Default Playback Endpoint:\r\n"
-                                             L"\tChannel Count.:\t%lu\r\n"
-                                             L"\tSample Rate...:\t%4.1f kHz\r\n"
-                                             L"\tData Type.....:\t%lu Bits\r\n",
-            pMixFormat->nChannels,
-            (float)pMixFormat->nSamplesPerSec / 1000.0f,
-            pMixFormat->wBitsPerSample );
+          if (SUCCEEDED (pDev->OpenPropertyStore (STGM_READ, &pStore)))
+          {
+            if (SUCCEEDED (pStore->GetValue (PKEY_AudioEngine_DeviceFormat, &property)))
+            {
+              pMixFormat = (PWAVEFORMATEX)property.blob.pBlobData;
+
+              //pAudioClient->GetMixFormat ((WAVEFORMATEX **)&pMixFormat);
+
+              pwszStat += swprintf (pwszStat, L"---\r\n * Default Playback Endpoint:\r\n"
+                                              L"\tChannel Count.:\t%lu\r\n"
+                                              L"\tSample Rate...:\t%4.1f kHz\r\n"
+                                              L"\tData Type.....:\t%hu-Bits\r\n",
+                                                pMixFormat->nChannels,
+                                                (float)pMixFormat->nSamplesPerSec / 1000.0f,
+                                                pMixFormat->wBitsPerSample);
+
+          //pMixFormat->wBitsPerSample = ((PWAVEFORMATEXTENSIBLE)pMixFormat)->Samples.wValidBitsPerSample;
+
+          //pMixFormat->nChannels = 4;
+          //pStore->SetValue        (PKEY_AudioEngine_DeviceFormat, property);
 
           if (pMixFormat->nChannels > 6) {
+#if 0
             MessageBox ( NULL,
                            L"Too many audio channels!"
                            L"\tPlease select a speaker configuration or device "
@@ -666,6 +681,10 @@ setup_config_status (HWND hDlg)
             lstrcatA (snd_cfg, "\\control.exe mmsys.cpl");
 
             WinExec (snd_cfg, SW_SHOW);
+#endif
+          }
+          }
+          pStore->Release ();
           }
         }
         pDev->Release ();

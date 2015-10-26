@@ -1051,11 +1051,11 @@ NVAPI::InitializeLibrary (void)
   misc    = new nvcfg_Miscellaneous ();
   optimus = new nvcfg_Optimus       ();
 
-  if (! CheckDriverVersion ()) {
-    TZT_MessageBox (L"WARNING:  Your display drivers are too old to play this game!\n",
-                    L"Please update your display drivers (Minimum Version = 353.30)",
-                    MB_OK | MB_ICONEXCLAMATION);
-  }
+  //if (! CheckDriverVersion ()) {
+    //TZT_MessageBox (L"WARNING:  Your display drivers are too old to play this game!\n",
+                    //L"Please update your display drivers (Minimum Version = 353.30)",
+                    //MB_OK | MB_ICONEXCLAMATION);
+  //}
 
   return (bLibInit = TRUE);
 }
@@ -1067,11 +1067,6 @@ NVAPI::CheckDriverVersion (void)
   GetDriverVersion (&ver);
 
   return ver >= 35582;
-  if (ver < 35582) {
-    return false;
-  }
-
-  return true;
 }
 
 bool NVAPI::tzt_fullscreen = false;

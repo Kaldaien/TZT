@@ -63,28 +63,31 @@ ErrorMessage (errno_t        err,
 
 tzt::CFG::File::File (wchar_t* filename)
 {
-  // We skip a few bytes (Unicode BOM) in crertain cirumstances, so this is the
-  //   actual pointer we need to free...
-  wchar_t* alloc;
-
   wszName = _wcsdup (filename);
 
+  char name [MAX_PATH];
+  sprintf (name, "%ls", wszName);
+
   errno_t ret;
-  TRY_FILE_IO (_wfopen_s (&fCFG, filename, L"r,ccs=UTF-8"), filename, ret);
+  TRY_FILE_IO (fopen_s (&fCFG, name, "r"), filename, ret);
 
   if (ret == 0 && fCFG != 0) {
                 fseek  (fCFG, 0, SEEK_END);
     long size = ftell  (fCFG);
                 rewind (fCFG);
 
-    wszData = new wchar_t [size * 3];
-    alloc   = wszData;
+    char*  szData = new char    [size];
+          wszData = new wchar_t [size];
 
-    fread (wszData, size * 3, 1, fCFG);
+    fread (szData, 1, size, fCFG);
+
+    // We process everything in Unicode internally, so this is the easiest way
+    //   to deal with that...
+    MultiByteToWideChar (CP_OEMCP, 0, szData, -1, wszData, size);
 
     parse ();
 
-    delete [] alloc;
+    delete [] wszData;
     wszData = nullptr;
 
     fflush (fCFG);
@@ -131,11 +134,12 @@ Process_Section (wchar_t* buffer, wchar_t* name, int start, int end)
           wcsncpy (val_str, buffer + value, l - value);
           val_str [l - value] = L'\0';
 
+          //MessageBoxW (NULL, key_str, L"Key", MB_OK);
           section.add_key_value (key_str, val_str);
 
           delete [] val_str;
-          break;
           l = end;
+          break;
         }
       }
 
@@ -380,7 +384,10 @@ tzt::CFG::File::write (std::wstring fname)
   // Strip Read-Only
   TZT_SetNormalFileAttribs (fname);
 
-  TRY_FILE_IO (_wfopen_s (&fOut, fname.c_str (), L"w,ccs=UTF-8"), fname.c_str (), ret);
+  char name [MAX_PATH];
+  sprintf (name, "%ls", fname.c_str ());
+
+  TRY_FILE_IO (fopen_s (&fOut, name, "w"), fname.c_str (), ret);
 
   if (ret != 0 || fOut == 0) {
     //TZT_MessageBox (L"ERROR: Cannot open INI file for writing. Is it read-only?", fname.c_str (), MB_OK | MB_ICONSTOP);
@@ -407,15 +414,16 @@ tzt::CFG::File::write (std::wstring fname)
     // Preserve insertion order so we don't jumble the config file up
     for (int i = 0; i < section.order.size (); i++) {
       std::wstring val = section.get_value (section.order [i]);
-      fwprintf (fOut, L"%s=%s", section.order [i].c_str (), val.c_str ());
+      fprintf (fOut, "%ls=%ls", section.order [i].c_str (), val.c_str ());
 
       // Add a new-line for every key-value pair except the last
       if (i < section.order.size () - 1)
-        fwprintf (fOut, L"\n");
+        fprintf (fOut, "\n");
     }
 #endif
 
     ++it;
+    break;
   }
 
   fflush (fOut);

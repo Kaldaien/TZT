@@ -26,6 +26,7 @@
 std::wstring  TZT_GetDocumentsDir      (void);
 bool          TZT_GetUserProfileDir    (wchar_t* buf, uint32_t* pdwLen);
 std::wstring  TZT_GetLocalAppDataDir   (void);
+std::wstring  TZF_GetSteamUserDataDir  (void);
 bool          TZT_IsTrue               (const wchar_t* string);
 bool          TZT_IsAdmin              (void);
 int           TZT_MessageBox           (std::wstring caption, std::wstring title, uint32_t flags);

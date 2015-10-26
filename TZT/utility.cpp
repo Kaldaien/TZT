@@ -145,7 +145,8 @@ TZT_DeleteAllConfigFiles (void)
   // Strip Read-Only
   TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"));
 
-  DeleteFile (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG").c_str ());
+  DeleteFile (std::wstring (TZT_GetLocalAppDataDir  () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG").c_str ());
+  DeleteFile (std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml").c_str ());
 }
 
 bool
@@ -192,6 +193,9 @@ TZT_CreateBackupConfig (void)
 {
   TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"),
                  std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT") );
+
+  TZT_FullCopy ( std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml"),
+                 std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt") );
 }
 
 void
@@ -199,6 +203,9 @@ TZT_RestoreConfigFiles (void)
 {
   TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"),
                  std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG") );
+
+  TZT_FullCopy ( std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt"),
+                 std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml") );
 
   // Strip Read-Only
   TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"));
@@ -281,12 +288,12 @@ static const char* everything_else = {
   "shadows=high\n"
   "anisotropy=16\n"
   "antialiasing=fxaa_low\n"
-  "draw_distance=far\n"
-  "lod_distance=far\n"
-  "ControlScheme00=1\n"
+  "draw_distance=medium\n"
+  "lod_distance=medium\n"
+  "ControlScheme00=0\n"
   "ControlScheme01=0\n"
-  "ControlScheme02=-1\n"
-  "ControlScheme03=-1\n"
+  "ControlScheme02=0\n"
+  "ControlScheme03=0\n"
   "ControlSA0=0;0;30;33;32;31;8;513;75;515;26;22;4;7;82;81;80;79;224;41;225;16;224;43;23;20;513;515;82;81;80;79;8;57;44;30;31;32;33;225;43;513;44;16;23;40;16;513;515;44;8;225;57;43;21;26;22;4;7\n"
   "ControlSA1=0;1;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;6;8;27;28;29;30;5;24;7;1;4;3;2;19;22;25;7;20;23;17;20;8;6;7;5;19;20;22;23;9;10;11;12\n"
   "ControlSA2=0;2;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;6;8;27;28;29;30;5;24;7;1;4;3;2;19;22;25;7;20;23;17;20;8;6;7;5;19;20;22;23;9;10;11;12\n"
@@ -360,13 +367,16 @@ struct toz_cfg_t
     FILE*   fCFG = nullptr;
     errno_t err;
 
+    char fname_s [MAX_PATH];
+    sprintf (fname_s, "%ls", fname.c_str ());
+
     //
     // If the config file cannot be opened, then create a new one.
     //
-    if (! (fCFG = _wfopen (fname.c_str (), L"r"))) {
+    if (! (fCFG = fopen (fname_s, "r"))) {
       DeleteFile (fname.c_str ());
 
-      TRY_FILE_IO ( _wfopen_s (&fCFG, fname.c_str (), L"a"),
+      TRY_FILE_IO ( fopen_s (&fCFG, fname_s, "a"),
         fname.c_str (),
         err );
 
@@ -405,4 +415,39 @@ TZT_InitializeConfig (void)
   cfg.refresh    = dmNow.dmDisplayFrequency;
 
   cfg.init ();
+}
+
+std::wstring
+TZF_GetSteamUserDataDir (void)
+{
+  DWORD len = MAX_PATH;
+  wchar_t wszSteamPath [MAX_PATH];
+
+  RegGetValueW (HKEY_CURRENT_USER, L"SOFTWARE\\Valve\\Steam\\", L"SteamPath", RRF_RT_REG_SZ, NULL, wszSteamPath, (LPDWORD)&len );
+
+  WIN32_FIND_DATA find_data;
+  HANDLE          hFind;
+
+  for (int i = 0; i < len; i++) {
+    if (wszSteamPath [i] == L'/')
+      wszSteamPath [i] = L'\\';
+  }
+
+  wchar_t wszPath [MAX_PATH];
+  wsprintf (wszPath, L"%s\\userdata\\*", wszSteamPath);
+
+  if (hFind = FindFirstFile (wszPath, &find_data)) {
+    do
+    {
+      if (wcslen (find_data.cFileName) > 2) {
+        std::wstring ret (wszSteamPath);
+        ret += L"\\userdata\\";
+        ret += find_data.cFileName;
+        return ret;
+      }
+    } while (FindNextFile (hFind, &find_data));
+    FindClose (hFind);
+  }
+
+  return L"<No Such Directory>";
 }
