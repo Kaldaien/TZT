@@ -862,7 +862,7 @@ void SaveDriverTweaksNV (HWND hDlg)
 
   NvDRSProfileHandle hProfile;
 
-  NVDRS_APPLICATION app;
+  NVDRS_APPLICATION app = { 0 };
   app.version = NVDRS_APPLICATION_VER;
 
   NVAPI_CALL (DRS_LoadSettings (hSession));
@@ -877,15 +877,13 @@ void SaveDriverTweaksNV (HWND hDlg)
 
   if (ret == NVAPI_EXECUTABLE_NOT_FOUND) {
     NVAPI_VERBOSE ();
-    NVDRS_PROFILE custom_profile;
-    memset (&custom_profile, 0, sizeof (NVDRS_PROFILE));
+    NVDRS_PROFILE custom_profile = { 0 };
 
-    custom_profile.isPredefined = true;
+    custom_profile.isPredefined = false;
     lstrcpyW ((wchar_t *)custom_profile.profileName, L"Tales of Zestiria");
     custom_profile.version = NVDRS_PROFILE_VER;
 
     NVAPI_CALL2 (DRS_CreateProfile (hSession, &custom_profile, &hProfile), ret);
-    //NVAPI_CALL2 (DRS_GetBaseProfile (hSession, &hProfile), ret);
 
     if (ret == NVAPI_OK) {
       memset (&app, 0, sizeof (NVDRS_APPLICATION));

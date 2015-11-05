@@ -43,7 +43,7 @@ using namespace tzt;
 ///// Match the game's setup (Arkham Knight)
 ////extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
 
-#define TZT_VERSION_STR L"0.6.2"
+#define TZT_VERSION_STR L"0.6.3"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
