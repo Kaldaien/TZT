@@ -146,7 +146,7 @@ TZT_DeleteAllConfigFiles (void)
   TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"));
 
   DeleteFile (std::wstring (TZT_GetLocalAppDataDir  () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG").c_str ());
-  DeleteFile (std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml").c_str ());
+  DeleteFile (std::wstring (TZT_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml").c_str ());
 }
 
 bool
@@ -194,8 +194,8 @@ TZT_CreateBackupConfig (void)
   TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG"),
                  std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT") );
 
-  TZT_FullCopy ( std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml"),
-                 std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt") );
+  TZT_FullCopy ( std::wstring (TZT_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml"),
+                 std::wstring (TZT_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt") );
 }
 
 void
@@ -204,8 +204,8 @@ TZT_RestoreConfigFiles (void)
   TZT_FullCopy ( std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"),
                  std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.CFG") );
 
-  TZT_FullCopy ( std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt"),
-                 std::wstring (TZF_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml") );
+  TZT_FullCopy ( std::wstring (TZT_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.tzt"),
+                 std::wstring (TZT_GetSteamUserDataDir () + L"\\351970\\remote\\WinData.xml") );
 
   // Strip Read-Only
   TZT_SetNormalFileAttribs (std::wstring (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\TOZ.TZT"));
@@ -418,12 +418,49 @@ TZT_InitializeConfig (void)
 }
 
 std::wstring
-TZF_GetSteamUserDataDir (void)
+TZT_GetSteamDir (void)
 {
   DWORD len = MAX_PATH;
   wchar_t wszSteamPath [MAX_PATH];
 
-  RegGetValueW (HKEY_CURRENT_USER, L"SOFTWARE\\Valve\\Steam\\", L"SteamPath", RRF_RT_REG_SZ, NULL, wszSteamPath, (LPDWORD)&len );
+  RegGetValueW ( HKEY_CURRENT_USER,
+                   L"SOFTWARE\\Valve\\Steam\\",
+                     L"SteamPath",
+                       RRF_RT_REG_SZ,
+                         NULL,
+                           wszSteamPath,
+                             (LPDWORD)&len );
+
+  return wszSteamPath;
+}
+
+std::wstring
+TZT_GetSteamExecutable (void)
+{
+  return TZT_GetSteamDir () + L"\\Steam.exe";
+}
+
+std::wstring
+TZT_GetSteamUIDLL (void)
+{
+  std::wstring steam_path =
+    TZT_GetSteamDir ();
+
+  steam_path += L"\\SteamUI.dll";
+
+  return steam_path;
+}
+
+std::wstring
+TZT_GetSteamUserDataDir (void)
+{
+  std::wstring steam_path =
+    TZT_GetSteamDir ();
+
+  DWORD len = wcslen (TZT_GetSteamDir ().c_str ());
+  wchar_t wszSteamPath [MAX_PATH] = { L'\0' };
+
+  wcsncpy (wszSteamPath, steam_path.c_str (), len);
 
   WIN32_FIND_DATA find_data;
   HANDLE          hFind;

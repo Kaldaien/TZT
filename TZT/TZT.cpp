@@ -40,10 +40,7 @@
 
 using namespace tzt;
 
-///// Match the game's setup (Arkham Knight)
-////extern "C" _declspec(dllexport) DWORD NvOptimusEnablement = 0x01;
-
-#define TZT_VERSION_STR L"0.6.3"
+#define TZT_VERSION_STR L"1.0.0"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -51,8 +48,19 @@ bool  messagebox_active; // Workaround some particularly strange behavior
 bool  first_load = true; // Some settings should only be loaded once; ignore when false
 
 HWND  hWndApp;
+
+extern INT_PTR CALLBACK AudioConfig     (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+extern INT_PTR CALLBACK FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+extern INT_PTR CALLBACK GraphicsConfig  (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+extern INT_PTR CALLBACK SteamConfig     (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+extern INT_PTR CALLBACK PluginsConfig   (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+extern INT_PTR CALLBACK OSDConfig       (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+
+HWND  hWndTZFIXTab;
+
 HICON tzt_icon;
 HICON nv_icon;
+HICON steam_icon;
 
 TO12_Config config;
 
@@ -65,11 +73,16 @@ int APIENTRY _tWinMain(_In_ HINSTANCE     hInstance,
   UNREFERENCED_PARAMETER(lpCmdLine);
   UNREFERENCED_PARAMETER (nCmdShow);
 
-  tzt_icon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_TZT));
-  nv_icon  = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_NV));
+  tzt_icon   = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_TZT));
+  steam_icon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_STEAM));
 
-  //INT_PTR CALLBACK DriverConfigNV (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-  //return (int)DialogBox (hInstance, MAKEINTRESOURCE (IDD_DRIVER_TWEAKS), NULL, DriverConfigNV);
+  HINSTANCE hCUDA = LoadLibrary (L"nvcuda.dll");
+
+  if (hCUDA != NULL) {
+    nv_icon = LoadIcon (hCUDA, MAKEINTRESOURCE (100));
+    FreeLibrary (hCUDA);
+  }
+
   return (int)DialogBox (hInstance, MAKEINTRESOURCE (IDD_TZT), NULL, Config);
 }
 
@@ -569,6 +582,119 @@ dsound_speaker_geometry_name (DWORD dwGeometry)
   }
 }
 
+enum {
+  TZFIX_AUDIO_TAB     = 0,
+  TZFIX_FRAMERATE_TAB = 1,
+  TZFIX_GRAPHICS_TAB  = 2,
+  TZFIX_OSD_TAB       = 3,
+  TZFIX_STEAM_TAB     = 4,
+  TZFIX_PLUGINS_TAB   = 5
+} tabs;
+
+void
+setup_tzfix_config (HWND hDlg)
+{
+  HIMAGELIST hImgList =
+    ImageList_Create ( 16, 16,
+                         ILC_COLOR32 | ILC_HIGHQUALITYSCALE,
+                           10, 32 );
+
+  HINSTANCE  hMMRes        = LoadLibrary (L"mmres.dll");
+  HICON      hIconSpeaker  = LoadIcon    (hMMRes, MAKEINTRESOURCE (3004));
+
+  HINSTANCE  hAccessibility = LoadLibrary (L"accessibilitycpl.dll");
+  HICON      hIconFramerate = LoadIcon    (hAccessibility, MAKEINTRESOURCE (339));
+
+  HINSTANCE  hDisplay       = LoadLibrary (L"Display.dll");
+  HICON      hIconGraphics  = LoadIcon    (hDisplay, MAKEINTRESOURCE (1));
+
+  HINSTANCE  hDDORes        = LoadLibrary (L"DDORes.dll");
+  HICON      hIconGamepad   = LoadIcon    (hDDORes, MAKEINTRESOURCE (2207));
+
+  HINSTANCE  hShell32       = LoadLibrary (L"SHELL32.DLL");
+  HICON      hIconOSD       = LoadIcon    (hShell32, MAKEINTRESOURCE (22));
+
+  HINSTANCE  hPowerCpl      = LoadLibrary (L"powercpl.dll");
+  HICON      hIconPlugin    = LoadIcon    (hPowerCpl, MAKEINTRESOURCE (507));
+
+  ImageList_AddIcon (hImgList, hIconSpeaker);
+  ImageList_AddIcon (hImgList, hIconFramerate);
+  ImageList_AddIcon (hImgList, hIconGraphics);
+  ImageList_AddIcon (hImgList, hIconOSD);
+  ImageList_AddIcon (hImgList, hIconPlugin);
+  ImageList_AddIcon (hImgList, steam_icon);
+
+  DestroyIcon (hIconSpeaker);
+  DestroyIcon (hIconFramerate);
+  DestroyIcon (hIconGraphics);
+  DestroyIcon (hIconOSD);
+  DestroyIcon (hIconPlugin);
+  DestroyIcon (hIconGamepad);
+
+  TabCtrl_SetImageList (GetDlgItem (hDlg, IDC_TZFIX_TABS), hImgList);
+
+  FreeLibrary (hMMRes);
+  FreeLibrary (hAccessibility);
+  FreeLibrary (hDisplay);
+  FreeLibrary (hDDORes);
+  FreeLibrary (hShell32);
+  FreeLibrary (hPowerCpl);
+
+  TCITEM audio_tab;
+
+  audio_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  audio_tab.iImage  = 0;
+  audio_tab.lParam  = TZFIX_AUDIO_TAB;
+  audio_tab.pszText = L"Audio";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 0, &audio_tab);
+
+  TCITEM framerate_tab;
+
+  framerate_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  framerate_tab.iImage  = 1;
+  framerate_tab.lParam  = TZFIX_FRAMERATE_TAB;
+  framerate_tab.pszText = L"Framerate";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 1, &framerate_tab);
+
+  TCITEM graphics_tab;
+
+  graphics_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  graphics_tab.iImage  = 2;
+  graphics_tab.lParam  = TZFIX_GRAPHICS_TAB;
+  graphics_tab.pszText = L"Graphics";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 2, &graphics_tab);
+
+  TCITEM OSD_tab;
+
+  OSD_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  OSD_tab.iImage  = 3;
+  OSD_tab.lParam  = TZFIX_OSD_TAB;
+  OSD_tab.pszText = L"OSD";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 3, &OSD_tab);
+
+  TCITEM steam_tab;
+
+  steam_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  steam_tab.iImage  = 5;
+  steam_tab.lParam  = TZFIX_STEAM_TAB;
+  steam_tab.pszText = L"Steam";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 4, &steam_tab);
+
+  TCITEM plugins_tab;
+
+  plugins_tab.mask    = TCIF_TEXT | TCIF_PARAM | TCIF_IMAGE;
+  plugins_tab.iImage  = 4;
+  plugins_tab.lParam  = TZFIX_PLUGINS_TAB;
+  plugins_tab.pszText = L"Plug-Ins";
+
+  TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 5, &plugins_tab);
+}
+
 #include <initguid.h>
 #pragma comment (lib, "ksproxy.lib")
 #include <ks.h>
@@ -582,6 +708,7 @@ dsound_speaker_geometry_name (DWORD dwGeometry)
 void
 setup_config_status (HWND hDlg)
 {
+#if 0
   wchar_t* pwszStat = wszConfigStatus;
 
   pwszStat += swprintf (pwszStat, L"Creating Default DirectSound Device... ");
@@ -702,6 +829,7 @@ setup_config_status (HWND hDlg)
   Edit_NoSetFocus (GetDlgItem (hDlg, IDC_TZF_LOG));
   Edit_SetText (GetDlgItem (hDlg, IDC_TZF_LOG), wszConfigStatus);
   Edit_NoSetFocus (GetDlgItem (hDlg, IDC_TZF_LOG));
+#endif
 }
 
 
@@ -891,8 +1019,9 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       setup_draw_distance    (hDlg);
 
       setup_driver_tweaks    (hDlg);
-      setup_config_status    (hDlg);
+      setup_tzfix_config     (hDlg);
 
+      //setup_config_status    (hDlg);
       //setup_framerate_limiting (hDlg);
 
       std::wstring gpu_str = DXGI::GetGPUInfo ();
@@ -941,8 +1070,62 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
       first_load = false;
 
+      hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
+
       return (INT_PTR)TRUE;
     }
+
+    case WM_MOVE:
+    {
+      RECT pos;
+      GetWindowRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), &pos);
+
+      RECT rc;
+      GetClientRect      (GetDlgItem (hDlg, IDC_TZFIX_TABS), &rc);
+      TabCtrl_AdjustRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), FALSE, &rc);
+      SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left, rc.bottom - rc.top, SW_SHOWNORMAL );
+    } break;
+
+    case WM_NOTIFY:
+    {
+      switch (((LPNMHDR)lParam)->code)
+      {
+        case TCN_SELCHANGING:
+        {
+          if (hWndTZFIXTab != 0) {
+            SendMessage (hWndTZFIXTab, WM_COMMAND, MAKEWPARAM (IDOK, 0), 0);
+            hWndTZFIXTab = 0;
+          }
+        } break;
+
+        case TCN_SELCHANGE:
+        {
+          int sel = TabCtrl_GetCurSel (GetDlgItem (hDlg, IDC_TZFIX_TABS));
+
+          if (sel == TZFIX_AUDIO_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
+          } else if (sel == TZFIX_FRAMERATE_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_FRAMERATE), hDlg, FramerateConfig);
+          } else if (sel == TZFIX_GRAPHICS_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_GRAPHICS), hDlg, GraphicsConfig);
+          } else if (sel == TZFIX_STEAM_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_STEAM), hDlg, SteamConfig);
+          } else if (sel == TZFIX_OSD_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_OSD), hDlg, OSDConfig);
+          } else if (sel == TZFIX_PLUGINS_TAB) {
+            hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_PLUGINS), hDlg, PluginsConfig);
+          }
+
+          RECT pos;
+          GetWindowRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), &pos);
+
+          RECT rc;
+          GetClientRect      (GetDlgItem (hDlg, IDC_TZFIX_TABS), &rc);
+          TabCtrl_AdjustRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), FALSE, &rc);
+          SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left, rc.bottom - rc.top, SW_SHOWNORMAL );
+        } break;
+      }
+    } break;
 
     case WM_LBUTTONDBLCLK:
     {
@@ -1161,6 +1344,11 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
             //decline_backup->store ();
           //}
+        }
+
+        // Close the currently open tab so that its config is saved.
+        if (hWndTZFIXTab != 0) {
+          SendMessage (hWndTZFIXTab, WM_COMMAND, MAKEWPARAM (IDOK, 0), 0);
         }
 
         std::wstring config_path (TZT_GetLocalAppDataDir () + L"\\BANDAI NAMCO Games\\Tales of Zestiria\\");

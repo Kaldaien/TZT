@@ -470,15 +470,13 @@ DXGI::GetGPUInfo (void)
 
                         L"    Memory Type......: %u-bit %s\r\n"
                         L"    Memory Banks.....: %u\r\n"
-                        L"    Memory Bandwidth.: %5.2f GiB/s"
+                        L"    Memory Bandwidth.: %5.2f GiB/s\r\n"
                         L"    Driver Model.....: WDDM %1u.%02u\r\n"
-                      //L"    ROP Count....: %u\r\n"
                         L"    CUDA Cores.......: %u\r\n"
                         L"    Shader Pipes.....: %u:%u\r\n",
 
       adapters,
       i,
-      //adapter_descs [i].VendorId,
       adapter_descs[i].Description,
       wszCodename,
       (float)adapter_descs[i].DedicatedVideoMemory / 1024.0f / 1024.0f / 1024.0f,

@@ -169,6 +169,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ini.h" />
     <ClInclude Include="nvapi.h" />
     <ClInclude Include="TZT.h" />
     <ClInclude Include="cfg.h" />
@@ -178,6 +179,13 @@
     <ClInclude Include="utility.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ini.cpp" />
+    <ClCompile Include="tzfix_audio.cpp" />
+    <ClCompile Include="tzfix_framerate.cpp" />
+    <ClCompile Include="tzfix_graphics.cpp" />
+    <ClCompile Include="tzfix_osd.cpp" />
+    <ClCompile Include="tzfix_plugins.cpp" />
+    <ClCompile Include="tzfix_steam.cpp" />
     <ClCompile Include="TZT.cpp" />
     <ClCompile Include="dxgi.cpp" />
     <ClCompile Include="cfg.cpp" />
@@ -189,8 +197,8 @@
     <ResourceCompile Include="TZT.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="steam.ico" />
     <Image Include="TZT.ico" />
-    <Image Include="nv.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

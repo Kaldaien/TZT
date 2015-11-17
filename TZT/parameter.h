@@ -22,6 +22,7 @@
 #define __TZT__PARAMETER_H__
 
 #include "cfg.h"
+#include "ini.h"
 
 #include <Windows.h>
 #include <vector>
@@ -76,6 +77,7 @@ class iParameter {
 public:
   iParameter (void) {
     cfg        = nullptr;
+    ini        = nullptr;
     ui_control = nullptr;
   }
 
@@ -94,10 +96,19 @@ public:
       }
     }
 
+    if (ini != nullptr) {
+      INI::File::Section& section = ini->get_section (ini_section);
+
+      if (section.contains_key (ini_key)) {
+        set_value_str (section.get_value (ini_key));
+        return true;
+      }
+    }
+
     return false;
   }
 
-  // Store value in CFG
+  // Store value in CFG or INI
   bool store (void)
   {
     bool ret = false;
@@ -122,6 +133,21 @@ public:
       }
     }
 
+    if (ini != nullptr) {
+      INI::File::Section& section = ini->get_section (ini_section);
+
+      if (section.contains_key (ini_key)) {
+        section.get_value (ini_key) = backing_string;
+        ret = true;
+      }
+
+      // Add this key/value if it doesn't already exist.
+      else {
+        section.add_key_value (ini_key, backing_string);
+        ret = true;// +1;
+      }
+    }
+
     return ret;
   }
 
@@ -130,6 +156,13 @@ public:
     cfg         = file;
     cfg_section = L"GLOBAL";
     cfg_key     = key;
+  }
+
+  void register_to_ini (INI::File* file, std::wstring section, std::wstring key)
+  {
+    ini         = file;
+    ini_section = section;
+    ini_key     = key;
   }
 
   void bind_to_control (UI::Control* ui_ctl)
@@ -145,6 +178,10 @@ private:
   CFG::File*               cfg;
   std::wstring             cfg_section;
   std::wstring             cfg_key;
+
+  INI::File*               ini;
+  std::wstring             ini_section;
+  std::wstring             ini_key;
 };
 
 template <typename _T>
