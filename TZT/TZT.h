@@ -25,12 +25,14 @@
 #include <string>
 #include "cfg.h"
 #include "ini.h"
+#include "utility.h"
 
 class TO12_Config {
 public:
            TO12_Config (void) { cfg       = nullptr;
                                 tzfix_ini = nullptr;
                                 d3d9_ini  = nullptr;
+                                rtss_ini  = nullptr;
                               };
   virtual ~TO12_Config (void)
   {
@@ -48,6 +50,11 @@ public:
       delete d3d9_ini;
       d3d9_ini = nullptr;
     }
+
+    if (rtss_ini != nullptr) {
+      delete rtss_ini;
+      rtss_ini = nullptr;
+    }
   }
 
 
@@ -58,6 +65,11 @@ public:
 
     tzfix_ini = new tzt::INI::File (L"tzfix.ini");
     d3d9_ini  = new tzt::INI::File (L"d3d9.ini");
+
+    std::wstring rtss_path = TZT_GetRTSSInstallDir ();
+    rtss_path += L"Profiles\\Tales of Zestiria.exe.cfg";
+
+    rtss_ini  = new tzt::INI::File (rtss_path.c_str ());
   }
 
   void save (std::wstring path) {
@@ -65,6 +77,11 @@ public:
 
     tzfix_ini->write (L"tzfix.ini");
     d3d9_ini->write  (L"d3d9.ini");
+
+    std::wstring rtss_path = TZT_GetRTSSInstallDir ();
+    rtss_path += L"Profiles\\Tales of Zestiria.exe.cfg";
+
+    rtss_ini->write  (rtss_path.c_str ());
   }
 
 
@@ -83,6 +100,12 @@ public:
   std::wstring
   lookup_value_d3d9 (std::wstring section_name, std::wstring key_name) {
     tzt::INI::File::Section& section = d3d9_ini->get_section (section_name);
+    return section.get_value (key_name);
+  }
+
+  std::wstring
+  lookup_value_rtss (std::wstring section_name, std::wstring key_name) {
+    tzt::INI::File::Section& section = rtss_ini->get_section (section_name);
     return section.get_value (key_name);
   }
 
@@ -105,6 +128,12 @@ public:
     section.get_value (key_name) = value;
   }
 
+  void
+  set_value_rtss (std::wstring section_name, std::wstring key_name, std::wstring value) {
+    tzt::INI::File::Section& section = rtss_ini->get_section (section_name);
+    section.get_value (key_name) = value;
+  }
+
 
   void import (std::wstring imp_data) {
     cfg->import (imp_data);
@@ -118,11 +147,16 @@ public:
     d3d9_ini->import (imp_data);
   }
 
+  void import_rtss (std::wstring imp_data) {
+    rtss_ini->import (imp_data);
+  }
+
 
   tzt::CFG::File* get_file       (void) { return cfg;       }
 
   tzt::INI::File* get_file_tzfix (void) { return tzfix_ini; }
   tzt::INI::File* get_file_d3d9  (void) { return d3d9_ini;  }
+  tzt::INI::File* get_file_rtss  (void) { return rtss_ini;  }
 
 
 private:
@@ -130,4 +164,5 @@ private:
 
   tzt::INI::File* tzfix_ini;
   tzt::INI::File* d3d9_ini;
+  tzt::INI::File* rtss_ini;
 } extern config;

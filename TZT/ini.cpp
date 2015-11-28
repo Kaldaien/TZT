@@ -40,7 +40,7 @@ ErrorMessage (errno_t        err,
 //TZT_MessageBox (ErrorMessage ((z), #x, (y), __LINE__, __FUNCTION__, __FILE__),\
 //L"File I/O Error", MB_OK | MB_ICONSTOP ); }
 
-tzt::INI::File::File (wchar_t* filename)
+tzt::INI::File::File (const wchar_t* filename)
 {
   sections.clear ();
 
@@ -126,7 +126,7 @@ Process_Section (wchar_t* buffer, wchar_t* name, int start, int end)
       //MessageBoxW (NULL, key_str, L"Key", MB_OK);
 
       int value = k + 1;
-      for (int l = value; l < end; l++) {
+      for (int l = value; l <= end; l++) {
         if (l > end - 1 || buffer [l] == L'\n') {
           key = l + 1;
           k = l + 1;

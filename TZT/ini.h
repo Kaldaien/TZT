@@ -32,7 +32,7 @@ namespace INI {
   class File
   {
   public:
-             File (wchar_t* filename);
+             File (const wchar_t* filename);
     virtual ~File (void);
 
     void parse  (void);

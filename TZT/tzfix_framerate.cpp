@@ -36,10 +36,7 @@ public:
 
   //protected:
   tzt::ParameterInt*   fps;
-  tzt::ParameterBool*  allow_windowed;
-
-  tzt::ParameterBool*  enable_stutter_fix;
-  tzt::ParameterFloat* fudge_factor;
+  tzt::ParameterBool*  auto_adjust;
 
   tzt::ParameterBool*  yield_processor;
   tzt::ParameterBool*  allow_fake_sleep;
@@ -50,10 +47,7 @@ public:
 
   //private:
   HWND hWndFPS;
-  HWND hWndAllowWindowed;
-  HWND hWndEnableStutterFix;
-  HWND hWndFudgeFactorLabel;
-  HWND hWndFudgeFactor;
+  HWND hWndTiming;
   HWND hWndYieldProcessor;
   HWND hWndAllowFakeSleep;
   HWND hWndMinimizeLatency;
@@ -65,24 +59,6 @@ tzfixcfg_Framerate::tzfixcfg_Framerate (void)
 {
   tzt::INI::File* tzfix_ini = config.get_file_tzfix ();
   tzt::INI::File* d3d9_ini  = config.get_file_d3d9  ();
-
-  enable_stutter_fix = static_cast <tzt::ParameterBool *> (
-    tzt::g_ParameterFactory.create_parameter <bool> (
-      L"Enable Stutter Fix"
-    )
-  );
-  enable_stutter_fix->register_to_ini ( tzfix_ini,
-    L"TZFIX.FrameRate",
-      L"FixStutter" );
-
-  allow_windowed = static_cast <tzt::ParameterBool *> (
-    tzt::g_ParameterFactory.create_parameter <bool> (
-      L"Allow Windowed Mode"
-    )
-  );
-  allow_windowed->register_to_ini ( tzfix_ini,
-    L"TZFIX.FrameRate",
-      L"AllowWindowedMode" );
 
   allow_fake_sleep = static_cast <tzt::ParameterBool *> (
     tzt::g_ParameterFactory.create_parameter <bool> (
@@ -110,23 +86,23 @@ tzfixcfg_Framerate::tzfixcfg_Framerate (void)
     L"TZFIX.FrameRate",
       L"MinimizeLatency" );
 
-  fudge_factor = static_cast <tzt::ParameterFloat *> (
-    tzt::g_ParameterFactory.create_parameter <float> (
-      L"Fudge Factor Coefficient"
-    )
-  );
-  fudge_factor->register_to_ini (tzfix_ini,
-    L"TZFIX.FrameRate",
-      L"FudgeFactor" );
-
   fps = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
       L"Target Framerate"
     )
   );
-  fps->register_to_ini (d3d9_ini,
-    L"Render.D3D9",
-      L"TargetFPS" );
+  fps->register_to_ini (tzfix_ini,
+    L"TZFIX.FrameRate",
+      L"Target" );
+
+  auto_adjust = static_cast <tzt::ParameterBool *> (
+    tzt::g_ParameterFactory.create_parameter <int> (
+      L"Auto Adjust TickScale"
+    )
+  );
+  auto_adjust->register_to_ini (tzfix_ini,
+    L"TZFIX.FrameRate",
+      L"AutoAdjust" );
 
   backbuffer_count = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
@@ -147,10 +123,7 @@ tzfixcfg_Framerate::tzfixcfg_Framerate (void)
       L"PreRenderLimit" );
 
   fps->load            ();
-  allow_windowed->load ();
-
-  enable_stutter_fix->load ();
-  fudge_factor->load       ();
+  auto_adjust->load    ();
 
   yield_processor->load  ();
   allow_fake_sleep->load ();
@@ -164,26 +137,30 @@ bool
 tzfixcfg_Framerate::setup_ui (HWND hDlg)
 {
   hWndFPS              = GetDlgItem (hDlg, IDC_TARGET_FPS);
-  hWndAllowWindowed    = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_ALLOW_WINDOWED);
-  hWndEnableStutterFix = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_STUTTER_FIX);
-  hWndFudgeFactorLabel = GetDlgItem (hDlg, IDC_TZFIX_FUDGE_FACTOR_LABEL);
-  hWndFudgeFactor      = GetDlgItem (hDlg, IDC_TZFIX_FUDGE_FACTOR);
+  hWndTiming           = GetDlgItem (hDlg, IDC_TARGET_METHOD);
   hWndYieldProcessor   = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_YIELD);
   hWndAllowFakeSleep   = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_FAKESLEEP);
   hWndMinimizeLatency  = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_MIN_LATENCY);
   hWndTripleBuffering  = GetDlgItem (hDlg, IDC_TZFIX_TRIPLE_BUFFERING);
   hWndPreRenderLimit   = GetDlgItem (hDlg, IDC_TZFIX_PRERENDER_LIMIT);
 
-  fps->bind_to_control (new tzt::UI::EditBox (hWndFPS));
-  fps->set_value       (fps->get_value ());
+  ComboBox_ResetContent (hWndFPS);
 
-  allow_windowed->bind_to_control (new tzt::UI::CheckBox (hWndAllowWindowed));
-  allow_windowed->set_value       (allow_windowed->get_value ());
+  ComboBox_InsertString (hWndFPS, 0, L"60 FPS");
+  ComboBox_InsertString (hWndFPS, 1, L"30 FPS");
+  ComboBox_InsertString (hWndFPS, 2, L"20 FPS");
+  ComboBox_InsertString (hWndFPS, 3, L"15 FPS");
+  ComboBox_InsertString (hWndFPS, 4, L"12 FPS");
+  ComboBox_InsertString (hWndFPS, 5, L"10 FPS");
 
-  enable_stutter_fix->bind_to_control (new tzt::UI::CheckBox (hWndEnableStutterFix));
-  enable_stutter_fix->set_value       (enable_stutter_fix->get_value ());
-  fudge_factor->bind_to_control (new tzt::UI::EditBox (hWndFudgeFactor));
-  fudge_factor->set_value       (fudge_factor->get_value ());
+  ComboBox_SetCurSel    (hWndFPS, (fps->get_value () / 60)-1);
+
+  ComboBox_ResetContent (hWndTiming);
+
+  ComboBox_InsertString (hWndTiming, 0, L"Adaptive (Auto-Adjust)");
+  ComboBox_InsertString (hWndTiming, 1, L"Fixed-Tick");
+
+  ComboBox_SetCurSel    (hWndTiming, (auto_adjust->get_value () == true ? 0 : 1));
 
   yield_processor->bind_to_control (new tzt::UI::CheckBox (hWndYieldProcessor));
   yield_processor->set_value       (yield_processor->get_value ());
@@ -218,9 +195,6 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
     ComboBox_SetCurSel (hWndPreRenderLimit, 6);
   else /*if (prerender == -1)*/
     ComboBox_SetCurSel (hWndPreRenderLimit, 0);
-
-  EnableWindow (hWndFudgeFactorLabel, enable_stutter_fix->get_value ());
-  EnableWindow (hWndFudgeFactor,      enable_stutter_fix->get_value ());
 
   bool check = backbuffer_count->get_value () == 2;
   Button_SetCheck (framerate->hWndTripleBuffering, check);
@@ -268,21 +242,9 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
   case WM_COMMAND:
   {
-    if (LOWORD (wParam) == IDC_TZFIX_FRAMERATE_STUTTER_FIX) {
-      bool check = Button_GetCheck (framerate->hWndEnableStutterFix);
-      framerate->enable_stutter_fix->set_value (check);
-
-      EnableWindow (framerate->hWndFudgeFactor,      check);
-      EnableWindow (framerate->hWndFudgeFactorLabel, check);
-    }
-
     if (LOWORD (wParam) == IDOK)
     {
-      bool check = Button_GetCheck (framerate->hWndEnableStutterFix);
-      framerate->enable_stutter_fix->set_value (check);
-
-      check = Button_GetCheck (framerate->hWndAllowWindowed);
-      framerate->allow_windowed->set_value (check);
+      BOOL check;
 
       check = Button_GetCheck (framerate->hWndYieldProcessor);
       framerate->yield_processor->set_value (check);
@@ -304,11 +266,15 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         framerate->poll_prerender_limit (hDlg)
       );
 
+      framerate->fps->set_value (
+        (ComboBox_GetCurSel (framerate->hWndFPS) + 1) * 60
+      );
       framerate->fps->store ();
-      framerate->allow_windowed->store ();
 
-      framerate->enable_stutter_fix->store ();
-      framerate->fudge_factor->store       ();
+      framerate->auto_adjust->set_value (
+        (ComboBox_GetCurSel (framerate->hWndTiming) == 0)
+      );
+      framerate->auto_adjust->store ();
 
       framerate->yield_processor->store  ();
       framerate->allow_fake_sleep->store ();

@@ -30,6 +30,7 @@ std::wstring  TZT_GetSteamDir          (void);
 std::wstring  TZT_GetSteamExecutable   (void);
 std::wstring  TZT_GetSteamUIDLL        (void);
 std::wstring  TZT_GetSteamUserDataDir  (void);
+std::wstring  TZT_GetRTSSInstallDir    (void);
 bool          TZT_IsTrue               (const wchar_t* string);
 bool          TZT_IsAdmin              (void);
 int           TZT_MessageBox           (std::wstring caption, std::wstring title, uint32_t flags);
