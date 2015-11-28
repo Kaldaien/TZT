@@ -289,11 +289,7 @@ DXGI::GetGPUInfo (void)
     typedef NvAPI_Status (__cdecl *NvAPI_GPU_GetShortName_t)(NvPhysicalGpuHandle handle, NvAPI_ShortString str);
     typedef NvAPI_Status (__cdecl *NvAPI_GetHybridMode_t)(NvPhysicalGpuHandle handle, NvU32* mode);
 
-#ifdef _WIN64
     HMODULE hLib = LoadLibrary (L"nvapi64.dll");
-#else
-    HMODULE hLib = LoadLibrary (L"nvapi.dll");
-#endif
     NvAPI_QueryInterface_t NvAPI_QueryInterface = (NvAPI_QueryInterface_t)GetProcAddress (hLib, "nvapi_QueryInterface");
     NvAPI_GPU_GetRamType_t NvAPI_GPU_GetRamType = (NvAPI_GPU_GetRamType_t)NvAPI_QueryInterface (0x57F7CAAC);
     NvAPI_GPU_GetShaderPipeCount_t NvAPI_GPU_GetShaderPipeCount = (NvAPI_GPU_GetShaderPipeCount_t)NvAPI_QueryInterface (0x63E2F56F);

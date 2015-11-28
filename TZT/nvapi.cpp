@@ -35,11 +35,7 @@
 #include "resource.h"
 #include <windowsx.h>
 
-#ifdef _WIN64
-# pragma comment (lib, "nvapi/amd64/nvapi64.lib")
-#else
-# pragma comment (lib, "nvapi/x86/nvapi.lib")
-#endif
+#pragma comment (lib, "nvapi/amd64/nvapi64.lib")
 
 using namespace tzt;
 using namespace tzt::NVAPI;

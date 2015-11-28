@@ -46,7 +46,7 @@ public:
   HWND hWndDisableScissor;
   HWND hWndPostProcessScale;
   HWND hWndShadowRes;
-  HWND hWndDoubleResSorey;
+  HWND hWndDoubleResSorrey;
   HWND hWndForceCompleteMipMaps;
 } *graphics = nullptr;
 
@@ -126,7 +126,7 @@ tzfixcfg_Graphics::setup_ui (HWND hDlg)
   hWndDisableScissor        = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DISABLE_SCISSOR);
   hWndPostProcessScale      = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_POSTPROCESS_SCALE);
   hWndShadowRes             = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_SHADOW_RES);
-  hWndDoubleResSorey        = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DOUBLE_RES_SOREY);
+  hWndDoubleResSorrey       = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DOUBLE_RES_SORREY);
   hWndForceCompleteMipMaps  = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_FORCE_MIPMAPS);
 
   disable_scissor->bind_to_control (new tzt::UI::CheckBox (hWndDisableScissor));
@@ -171,8 +171,8 @@ tzfixcfg_Graphics::setup_ui (HWND hDlg)
 
   ComboBox_SetCurSel (hWndShadowRes, abs (shadow_scale->get_value ()));
 
-  Button_Enable   (hWndDoubleResSorey, shadow_scale->get_value () != 0);
-  Button_SetCheck (hWndDoubleResSorey, shadow_scale->get_value ()  > 0);
+  Button_Enable   (hWndDoubleResSorrey, shadow_scale->get_value () != 0);
+  Button_SetCheck (hWndDoubleResSorrey, shadow_scale->get_value ()  > 0);
 
   return true;
 }
@@ -204,14 +204,14 @@ GraphicsConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       }
 
       if (LOWORD (wParam) == IDC_TZFIX_GRAPHICS_SHADOW_RES ||
-          LOWORD (wParam) == IDC_TZFIX_GRAPHICS_DOUBLE_RES_SOREY) {
+          LOWORD (wParam) == IDC_TZFIX_GRAPHICS_DOUBLE_RES_SORREY) {
         if (HIWORD (wParam) == CBN_SELCHANGE ||
-            LOWORD (wParam) == IDC_TZFIX_GRAPHICS_DOUBLE_RES_SOREY) {
+            LOWORD (wParam) == IDC_TZFIX_GRAPHICS_DOUBLE_RES_SORREY) {
           int shadow_sel = ComboBox_GetCurSel (graphics->hWndShadowRes);
-          Button_Enable (graphics->hWndDoubleResSorey, shadow_sel > 0);
+          Button_Enable (graphics->hWndDoubleResSorrey, shadow_sel > 0);
 
           int shadow_res = shadow_sel;
-          if (! Button_GetCheck (graphics->hWndDoubleResSorey))
+          if (! Button_GetCheck (graphics->hWndDoubleResSorrey))
             shadow_res *= -1;
 
           graphics->shadow_scale->set_value (shadow_res);
