@@ -40,7 +40,7 @@
 
 using namespace tzt;
 
-#define TZT_VERSION_STR L"1.0.0"
+#define TZT_VERSION_STR L"1.0.1"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -523,65 +523,6 @@ void setup_debug_utils (HWND hDlg, bool debug)
   }
 }
 
-
-#include <mmeapi.h>
-#include <dsound.h>
-#pragma comment (lib, "dsound.lib")
-
-wchar_t wszConfigStatus [16384];
-
-const wchar_t*
-dsound_channel_config_name (DWORD dwLayout)
-{
-  switch (dwLayout)
-  {
-    case DSSPEAKER_DIRECTOUT:
-      return L"Direct Out";
-    case DSSPEAKER_HEADPHONE:
-      return L"Headphone";
-    case DSSPEAKER_MONO:
-      return L"Monophonic";
-    case DSSPEAKER_QUAD:
-      return L"Quadraphonic";
-    case DSSPEAKER_STEREO:
-      return L"Stereo";
-    case DSSPEAKER_SURROUND:
-      return L"Surround";
-    case DSSPEAKER_5POINT1:
-      return L"5.1 (Obsolete Setting - AVOIDME)";
-    case DSSPEAKER_7POINT1:
-      return L"7.1 (Obsolete Setting - AVOIDME)";
-    case DSSPEAKER_7POINT1_SURROUND:
-      return L"7.1 Surround";
-    case DSSPEAKER_5POINT1_SURROUND:
-      return L"5.1 Surround";
-    default:
-      return L"UNKNOWN?!";
-  }
-}
-
-std::wstring
-dsound_speaker_geometry_name (DWORD dwGeometry)
-{
-  switch (dwGeometry)
-  {
-    case DSSPEAKER_GEOMETRY_MIN:
-      return L"Minimum (5°)";
-    case DSSPEAKER_GEOMETRY_NARROW:
-      return L"Narrow (10°)";
-    case DSSPEAKER_GEOMETRY_WIDE:
-      return L"Wide (20°)";
-    case DSSPEAKER_GEOMETRY_MAX:
-      return L"Maximum (180°)";
-    default:
-    {
-      wchar_t wszCustom [64];
-      swprintf (wszCustom, L"Custom (%lu°)", dwGeometry);
-      return wszCustom;
-    }
-  }
-}
-
 enum {
   TZFIX_AUDIO_TAB     = 0,
   TZFIX_FRAMERATE_TAB = 1,
@@ -694,144 +635,6 @@ setup_tzfix_config (HWND hDlg)
 
   TabCtrl_InsertItem (GetDlgItem (hDlg, IDC_TZFIX_TABS), 5, &plugins_tab);
 }
-
-#include <initguid.h>
-#pragma comment (lib, "ksproxy.lib")
-#include <ks.h>
-//#include <ksproxy.h>
-#include <ksmedia.h>
-
-#include <Mmdeviceapi.h>
-#include <audioendpoints.h>
-#include <audioclient.h>
-
-void
-setup_config_status (HWND hDlg)
-{
-#if 0
-  wchar_t* pwszStat = wszConfigStatus;
-
-  pwszStat += swprintf (pwszStat, L"Creating Default DirectSound Device... ");
-
-  LPDIRECTSOUND8 pDS;
-  if (SUCCEEDED (DirectSoundCreate8 (NULL, &pDS, NULL))) {
-    pDS->Initialize (NULL);
-    pwszStat += swprintf (pwszStat, L"Success!\r\n");
-
-    pwszStat += swprintf (pwszStat, L" >> Retrieving Channel Configuration...\t");
-    DWORD dwSpeakerConfig;
-    pDS->GetSpeakerConfig (&dwSpeakerConfig);
-    pwszStat += swprintf (pwszStat, L"%d\t(%s)\r\n",
-                                DSSPEAKER_CONFIG (dwSpeakerConfig),
-                      dsound_channel_config_name (
-                                DSSPEAKER_CONFIG (dwSpeakerConfig)));
-
-#if 0
-    pwszStat += swprintf (pwszStat, L" >> Retrieving Speaker Geometry...\t\t");
-    pwszStat += swprintf (pwszStat, L"%d\t(%s)\r\n",
-        DSSPEAKER_GEOMETRY (dwSpeakerConfig),
-      dsound_speaker_geometry_name (
-        DSSPEAKER_GEOMETRY (dwSpeakerConfig)).c_str ());
-#endif
-
-    DSCAPS sound_caps;
-    if (SUCCEEDED (pDS->GetCaps (&sound_caps))) {
-      pwszStat += swprintf (pwszStat, L"---\r\nMinimum Sample Rate:\t%lu"
-        L"\r\nMaximum Sample Rate: %lu\r\n",
-        sound_caps.dwMinSecondarySampleRate,
-        sound_caps.dwMaxSecondarySampleRate );
-    }
-
-    IMMDeviceEnumerator* pEnumerator;
-
-    CoInitialize (NULL);
-
-    const CLSID CLSID_MMDeviceEnumerator = __uuidof (MMDeviceEnumerator);
-    const IID   IID_IMMDeviceEnumerator  = __uuidof (IMMDeviceEnumerator);
-
-    HRESULT hr = CoCreateInstance (
-                   CLSID_MMDeviceEnumerator, NULL,
-                   CLSCTX_ALL, IID_IMMDeviceEnumerator,
-                   (void **)&pEnumerator
-                 );
-
-    if (SUCCEEDED (hr)) {
-      IMMDevice* pDev;
-
-      if (SUCCEEDED (
-             pEnumerator->GetDefaultAudioEndpoint (eRender, eConsole, &pDev)
-           )
-         )
-      {
-        IAudioClient* pAudioClient;
-        if (SUCCEEDED (pDev->Activate (
-                         __uuidof (IAudioClient), CLSCTX_ALL,
-                         NULL, (void **)&pAudioClient )
-                      )
-           ) {
-          WAVEFORMATEX*   pMixFormat;
-          IPropertyStore* pStore;
-          PROPVARIANT     property;
-
-          if (SUCCEEDED (pDev->OpenPropertyStore (STGM_READ, &pStore)))
-          {
-            if (SUCCEEDED (pStore->GetValue (PKEY_AudioEngine_DeviceFormat, &property)))
-            {
-              pMixFormat = (PWAVEFORMATEX)property.blob.pBlobData;
-
-              //pAudioClient->GetMixFormat ((WAVEFORMATEX **)&pMixFormat);
-
-              pwszStat += swprintf (pwszStat, L"---\r\n * Default Playback Endpoint:\r\n"
-                                              L"\tChannel Count.:\t%lu\r\n"
-                                              L"\tSample Rate...:\t%4.1f kHz\r\n"
-                                              L"\tData Type.....:\t%hu-Bits\r\n",
-                                                pMixFormat->nChannels,
-                                                (float)pMixFormat->nSamplesPerSec / 1000.0f,
-                                                pMixFormat->wBitsPerSample);
-
-          //pMixFormat->wBitsPerSample = ((PWAVEFORMATEXTENSIBLE)pMixFormat)->Samples.wValidBitsPerSample;
-
-          //pMixFormat->nChannels = 4;
-          //pStore->SetValue        (PKEY_AudioEngine_DeviceFormat, property);
-
-          if (pMixFormat->nChannels > 6) {
-#if 0
-            MessageBox ( NULL,
-                           L"Too many audio channels!"
-                           L"\tPlease select a speaker configuration or device "
-                            L"with 5.1 channels or fewer",
-                             L"Bad Audio Configuration",
-                               MB_OK | MB_ICONSTOP );
-
-            char snd_cfg [MAX_PATH];
-            GetSystemDirectoryA (snd_cfg, MAX_PATH);
-            lstrcatA (snd_cfg, "\\control.exe mmsys.cpl");
-
-            WinExec (snd_cfg, SW_SHOW);
-#endif
-          }
-          }
-          pStore->Release ();
-          }
-        }
-        pDev->Release ();
-      }
-      pEnumerator->Release ();
-    }
-
-    pwszStat += swprintf (pwszStat, L"Releasing Default DirectSound Device... ");
-    pDS->Release ();
-    pwszStat += swprintf (pwszStat, L"done!\r\n");
-  } else {
-    pwszStat += swprintf (pwszStat, L"Failed!\r\n");
-  }
-
-  Edit_NoSetFocus (GetDlgItem (hDlg, IDC_TZF_LOG));
-  Edit_SetText (GetDlgItem (hDlg, IDC_TZF_LOG), wszConfigStatus);
-  Edit_NoSetFocus (GetDlgItem (hDlg, IDC_TZF_LOG));
-#endif
-}
-
 
 using namespace tzt;
 using namespace tzt::UI;
@@ -1070,7 +873,7 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
       first_load = false;
 
-      hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
+hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
 
       return (INT_PTR)TRUE;
     }
@@ -1083,7 +886,7 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       RECT rc;
       GetClientRect      (GetDlgItem (hDlg, IDC_TZFIX_TABS), &rc);
       TabCtrl_AdjustRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), FALSE, &rc);
-      SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left, rc.bottom - rc.top, SW_SHOWNORMAL );
+      SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left + 4, rc.bottom - rc.top + 4, SWP_SHOWWINDOW);
     } break;
 
     case WM_NOTIFY:
@@ -1101,6 +904,8 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         case TCN_SELCHANGE:
         {
           int sel = TabCtrl_GetCurSel (GetDlgItem (hDlg, IDC_TZFIX_TABS));
+
+          HINSTANCE hInstance = GetWindowInstance (hDlg);
 
           if (sel == TZFIX_AUDIO_TAB) {
             hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
@@ -1122,7 +927,7 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
           RECT rc;
           GetClientRect      (GetDlgItem (hDlg, IDC_TZFIX_TABS), &rc);
           TabCtrl_AdjustRect (GetDlgItem (hDlg, IDC_TZFIX_TABS), FALSE, &rc);
-          SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left, rc.bottom - rc.top, SW_SHOWNORMAL );
+          SetWindowPos       (hWndTZFIXTab, hDlg, pos.left + rc.left - 3, pos.top + rc.top - 2, rc.right - rc.left + 4, rc.bottom - rc.top + 4, SWP_SHOWWINDOW);
         } break;
       }
     } break;
