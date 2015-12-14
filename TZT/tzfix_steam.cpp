@@ -33,9 +33,10 @@ public:
   bool setup_ui  (HWND hDlg);
 
 //protected:
-  tzt::ParameterBool* no_sound;
-  tzt::ParameterBool* take_screenshot;
-  tzt::ParameterBool* allow_broadcasts;
+  tzt::ParameterBool*    no_sound;
+  tzt::ParameterBool*    take_screenshot;
+  tzt::ParameterBool*    allow_broadcasts;
+  tzt::ParameterStringW* sound_file;
 
 //private:
   HWND hWndPlaySound;
@@ -75,9 +76,19 @@ tzfixcfg_Steam::tzfixcfg_Steam (void)
                                        L"TZFIX.Steam",
                                          L"AllowBroadcasts" );
 
+  sound_file = static_cast <tzt::ParameterStringW *> (
+    tzt::g_ParameterFactory.create_parameter <std::wstring> (
+      L"Sound to Play"
+    )
+  );
+  sound_file->register_to_ini ( d3d9_ini,
+                                  L"Steam.Achievements",
+                                    L"SoundFile" );
+
   no_sound->load         ();
   take_screenshot->load  ();
   allow_broadcasts->load ();
+  sound_file->load       ();
 }
 
 bool
@@ -99,6 +110,99 @@ tzfixcfg_Steam::setup_ui (HWND hDlg)
   return true;
 }
 
+HRESULT SelectSoundFile (void)
+{
+  IFileDialog *pfd = nullptr;
+
+  HRESULT hr =
+    CoCreateInstance ( CLSID_FileOpenDialog,
+                         NULL,
+                           CLSCTX_INPROC_SERVER,
+                             IID_PPV_ARGS (&pfd) );
+
+  if (SUCCEEDED (hr)) {
+    IFileDialogEvents *pfde = NULL;
+
+    hr = CDialogEventHandler_CreateInstance (IID_PPV_ARGS (&pfde));
+
+    if (SUCCEEDED (hr)) {
+      DWORD dwCookie;
+
+      hr = pfd->Advise (pfde, &dwCookie);
+      if (SUCCEEDED (hr)) {
+        DWORD dwFlags;
+
+        hr = pfd->GetOptions (&dwFlags);
+
+        if (SUCCEEDED (hr)) {
+          hr = pfd->SetOptions (dwFlags | FOS_FORCEFILESYSTEM);
+
+          if (SUCCEEDED (hr)) {
+            COMDLG_FILTERSPEC rgSpec [] = {
+                { L"PCM Audio (.wav)", L"*.wav;*.wave" },
+            };
+
+            hr = pfd->SetFileTypes (ARRAYSIZE (rgSpec), rgSpec);
+
+            if (SUCCEEDED (hr)) {
+              hr = pfd->SetFileTypeIndex (1);
+
+              if (SUCCEEDED (hr)) {
+                hr = pfd->SetDefaultExtension (L"wav;wave");
+
+                if (SUCCEEDED (hr)) {
+                  hr = pfd->Show (NULL);
+
+                  if (SUCCEEDED (hr)) {
+                    IShellItem *psiResult;
+
+                    hr = pfd->GetResult(&psiResult);
+
+                    if (SUCCEEDED (hr)) {
+                      PWSTR pszFilePath = NULL;
+
+                      hr =
+                        psiResult->GetDisplayName ( SIGDN_FILESYSPATH,
+                                                      &pszFilePath );
+
+                      if (SUCCEEDED (hr)) {
+#if 0
+                        TaskDialog ( NULL,
+                                     NULL,
+                                     L"CommonFileDialogApp",
+                                     pszFilePath,
+                                     NULL,
+                                     TDCBF_OK_BUTTON,
+                                     TD_INFORMATION_ICON,
+                                     NULL);
+#else
+                        steam->sound_file->set_value (pszFilePath);
+#endif
+                        CoTaskMemFree (pszFilePath);
+                      }
+
+                      psiResult->Release ();
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        pfd->Unadvise (dwCookie);
+      }
+
+      pfde->Release ();
+    }
+
+    pfd->Release ();
+  }
+
+  return hr;
+}
+
+
 INT_PTR
 CALLBACK
 SteamConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -116,6 +220,11 @@ SteamConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_COMMAND:
     {
+      if (LOWORD(wParam) == IDC_ACHIEVEMENT_SOUND)
+      {
+        SelectSoundFile ();
+      }
+
       if (LOWORD (wParam) == IDOK)
       {
         bool check = Button_GetCheck (steam->hWndPlaySound);
@@ -130,6 +239,7 @@ SteamConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         steam->no_sound->store         ();
         steam->take_screenshot->store  ();
         steam->allow_broadcasts->store ();
+        steam->sound_file->store       ();
 
         EndDialog (hDlg, LOWORD (wParam));
         return (INT_PTR)TRUE;

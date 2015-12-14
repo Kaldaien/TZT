@@ -33,17 +33,19 @@ public:
   bool setup_ui  (HWND hDlg);
 
 //protected:
-  tzt::ParameterBool*  aspect_correct_videos;
-  tzt::ParameterBool*  aspect_correct_ui;
-  tzt::ParameterBool*  disable_scissor;
-  tzt::ParameterBool*  complete_mipmaps;
+  tzt::ParameterBool*    aspect_correct_videos;
+  tzt::ParameterBool*    aspect_correct_ui;
+  tzt::ParameterBool*    clear_blackbars;
+  tzt::ParameterBool*    complete_mipmaps;
 
-  tzt::ParameterInt*   shadow_scale;
-  tzt::ParameterFloat* postprocess_ratio;
+  tzt::ParameterInt*     shadow_scale;
+  tzt::ParameterFloat*   postprocess_ratio;
+
+  tzt::ParameterStringW* intro_video;
 
 //private:
   HWND hWndAspectRatioCorrection;
-  HWND hWndDisableScissor;
+  HWND hWndClearBlackbars;
   HWND hWndPostProcessScale;
   HWND hWndShadowRes;
   HWND hWndDoubleResSorey;
@@ -73,14 +75,14 @@ tzfixcfg_Graphics::tzfixcfg_Graphics (void)
                                          L"TZFIX.Render",
                                            L"AspectCorrection" );
 
-  disable_scissor = static_cast <tzt::ParameterBool *> (
+  clear_blackbars = static_cast <tzt::ParameterBool *> (
     tzt::g_ParameterFactory.create_parameter <bool> (
-      L"Disable Scissor Test"
+      L"Clear non-16:9 Tops / Sides"
     )
   );
-  disable_scissor->register_to_ini ( tzfix_ini,
+  clear_blackbars->register_to_ini ( tzfix_ini,
                                        L"TZFIX.Render",
-                                         L"DisableScissor" );
+                                         L"ClearBlackbars" );
 
   complete_mipmaps = static_cast <tzt::ParameterBool *> (
     tzt::g_ParameterFactory.create_parameter <bool> (
@@ -109,28 +111,39 @@ tzfixcfg_Graphics::tzfixcfg_Graphics (void)
                                          L"TZFIX.Render",
                                            L"PostProcessRatio" );
 
+  intro_video = static_cast <tzt::ParameterStringW *> (
+    tzt::g_ParameterFactory.create_parameter <std::wstring> (
+      L"Intro Video"
+    )
+  );
+  intro_video->register_to_ini ( tzfix_ini,
+                                   L"TZFIX.System",
+                                     L"IntroVideo" );
+
   aspect_correct_videos->load ();
   aspect_correct_ui->load     ();
-  disable_scissor->load       ();
+  clear_blackbars->load       ();
 
   complete_mipmaps->load      ();
 
   shadow_scale->load          ();
   postprocess_ratio->load     ();
+
+  intro_video->load           ();
 }
 
 bool
 tzfixcfg_Graphics::setup_ui (HWND hDlg)
 {
   hWndAspectRatioCorrection = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_ARC);
-  hWndDisableScissor        = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DISABLE_SCISSOR);
+  hWndClearBlackbars        = GetDlgItem (hDlg, IDC_CLEAR_BLACKBARS);
   hWndPostProcessScale      = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_POSTPROCESS_SCALE);
   hWndShadowRes             = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_SHADOW_RES);
   hWndDoubleResSorey        = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DOUBLE_RES_SOREY);
   hWndForceCompleteMipMaps  = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_FORCE_MIPMAPS);
 
-  disable_scissor->bind_to_control (new tzt::UI::CheckBox (hWndDisableScissor));
-  disable_scissor->set_value (disable_scissor->get_value ());
+  clear_blackbars->bind_to_control (new tzt::UI::CheckBox (hWndClearBlackbars));
+  clear_blackbars->set_value (clear_blackbars->get_value ());
 
   postprocess_ratio->bind_to_control (new tzt::UI::EditBox (hWndPostProcessScale));
   postprocess_ratio->set_value (postprocess_ratio->get_value ());
@@ -160,7 +173,7 @@ tzfixcfg_Graphics::setup_ui (HWND hDlg)
 
   ComboBox_SetCurSel (hWndAspectRatioCorrection, ar_sel);
 
-  Button_Enable (hWndDisableScissor, aspect_correct_ui->get_value ());
+  Button_Enable (hWndClearBlackbars, aspect_correct_ui->get_value ());
 
   ComboBox_InsertString (hWndShadowRes, 0, L"Original (128x128)");
   ComboBox_InsertString (hWndShadowRes, 1, L" 2x (256x256)");
@@ -175,6 +188,87 @@ tzfixcfg_Graphics::setup_ui (HWND hDlg)
   Button_SetCheck (hWndDoubleResSorey, shadow_scale->get_value ()  > 0);
 
   return true;
+}
+
+HRESULT SelectIntroVideo (void)
+{
+  IFileDialog *pfd = nullptr;
+
+  HRESULT hr =
+    CoCreateInstance ( CLSID_FileOpenDialog,
+                         NULL,
+                           CLSCTX_INPROC_SERVER,
+                             IID_PPV_ARGS (&pfd) );
+
+  if (SUCCEEDED (hr)) {
+    IFileDialogEvents *pfde = NULL;
+
+    hr = CDialogEventHandler_CreateInstance (IID_PPV_ARGS (&pfde));
+
+    if (SUCCEEDED (hr)) {
+      DWORD dwCookie;
+
+      hr = pfd->Advise (pfde, &dwCookie);
+      if (SUCCEEDED (hr)) {
+        DWORD dwFlags;
+
+        hr = pfd->GetOptions (&dwFlags);
+
+        if (SUCCEEDED (hr)) {
+          hr = pfd->SetOptions (dwFlags | FOS_FORCEFILESYSTEM);
+
+          if (SUCCEEDED (hr)) {
+            COMDLG_FILTERSPEC rgSpec [] = {
+                { L"Bink2 Video (.bk2)", L"*.bk2" },
+            };
+
+            hr = pfd->SetFileTypes (ARRAYSIZE (rgSpec), rgSpec);
+
+            if (SUCCEEDED (hr)) {
+              hr = pfd->SetFileTypeIndex (1);
+
+              if (SUCCEEDED (hr)) {
+                hr = pfd->SetDefaultExtension (L"bk2");
+
+                if (SUCCEEDED (hr)) {
+                  hr = pfd->Show (NULL);
+
+                  if (SUCCEEDED (hr)) {
+                    IShellItem *psiResult;
+
+                    hr = pfd->GetResult(&psiResult);
+
+                    if (SUCCEEDED (hr)) {
+                      PWSTR pszFilePath = NULL;
+
+                      hr =
+                        psiResult->GetDisplayName ( SIGDN_FILESYSPATH,
+                                                      &pszFilePath );
+
+                      if (SUCCEEDED (hr)) {
+                        graphics->intro_video->set_value (pszFilePath);
+                        CoTaskMemFree (pszFilePath);
+                      }
+
+                      psiResult->Release ();
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        pfd->Unadvise (dwCookie);
+      }
+
+      pfde->Release ();
+    }
+
+    pfd->Release ();
+  }
+
+  return hr;
 }
 
 INT_PTR
@@ -197,7 +291,7 @@ GraphicsConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       if (LOWORD (wParam) == IDC_TZFIX_GRAPHICS_ARC) {
         if (HIWORD (wParam) == CBN_SELCHANGE) {
           int ar_sel = ComboBox_GetCurSel (graphics->hWndAspectRatioCorrection);
-          Button_Enable (graphics->hWndDisableScissor, ar_sel >= 2);
+          Button_Enable (graphics->hWndClearBlackbars, ar_sel >= 2);
           graphics->aspect_correct_videos->set_value (ar_sel == 1 || ar_sel == 3);
           graphics->aspect_correct_ui->set_value     (ar_sel == 2 || ar_sel == 3);
         }
@@ -218,16 +312,22 @@ GraphicsConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
       }
 
+      if (LOWORD (wParam) == IDC_INTRO_VIDEO) {
+        SelectIntroVideo ();
+      }
+
       if (LOWORD (wParam) == IDOK)
       {
         graphics->aspect_correct_videos->store ();
         graphics->aspect_correct_ui->store     ();
-        graphics->disable_scissor->store       ();
+        graphics->clear_blackbars->store       ();
 
         graphics->complete_mipmaps->store      ();
 
         graphics->shadow_scale->store          ();
         graphics->postprocess_ratio->store     ();
+
+        graphics->intro_video->store           ();
 
         EndDialog (hDlg, LOWORD (wParam));
         return (INT_PTR)TRUE;

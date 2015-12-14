@@ -38,6 +38,11 @@ public:
   tzt::ParameterInt*   fps;
   tzt::ParameterBool*  auto_adjust;
 
+  tzt::ParameterInt*   battle_fps;
+  tzt::ParameterBool*  battle_adaptive;
+
+  tzt::ParameterInt*   cutscene_fps;
+
   tzt::ParameterBool*  yield_processor;
   tzt::ParameterBool*  allow_fake_sleep;
   tzt::ParameterBool*  minimize_latency;
@@ -47,6 +52,9 @@ public:
 
   //private:
   HWND hWndFPS;
+  HWND hWndBattleFPS;
+  HWND hWndBattleTiming;
+  HWND hWndCutsceneFPS;
   HWND hWndTiming;
   HWND hWndYieldProcessor;
   HWND hWndAllowFakeSleep;
@@ -96,13 +104,40 @@ tzfixcfg_Framerate::tzfixcfg_Framerate (void)
       L"Target" );
 
   auto_adjust = static_cast <tzt::ParameterBool *> (
-    tzt::g_ParameterFactory.create_parameter <int> (
+    tzt::g_ParameterFactory.create_parameter <bool> (
       L"Auto Adjust TickScale"
     )
   );
   auto_adjust->register_to_ini (tzfix_ini,
     L"TZFIX.FrameRate",
       L"AutoAdjust" );
+
+  battle_adaptive = static_cast <tzt::ParameterBool *> (
+    tzt::g_ParameterFactory.create_parameter <bool> (
+      L"Auto Adjust Battle Ticks"
+    )
+  );
+  battle_adaptive->register_to_ini (tzfix_ini,
+    L"TZFIX.FrameRate",
+      L"BattleAdaptive" );
+
+  battle_fps = static_cast <tzt::ParameterInt *> (
+    tzt::g_ParameterFactory.create_parameter <int> (
+      L"Battle Target Framerate"
+    )
+  );
+  battle_fps->register_to_ini (tzfix_ini,
+    L"TZFIX.FrameRate",
+      L"BattleTarget" );
+
+  cutscene_fps = static_cast <tzt::ParameterInt *> (
+    tzt::g_ParameterFactory.create_parameter <int> (
+      L"Cutscene Target Framerate"
+    )
+  );
+  cutscene_fps->register_to_ini (tzfix_ini,
+    L"TZFIX.FrameRate",
+      L"CutsceneTarget" );
 
   backbuffer_count = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
@@ -122,8 +157,13 @@ tzfixcfg_Framerate::tzfixcfg_Framerate (void)
     L"Render.D3D9",
       L"PreRenderLimit" );
 
-  fps->load            ();
-  auto_adjust->load    ();
+  fps->load              ();
+  auto_adjust->load      ();
+
+  battle_fps->load       ();
+  battle_adaptive->load  ();
+
+  cutscene_fps->load     ();
 
   yield_processor->load  ();
   allow_fake_sleep->load ();
@@ -138,6 +178,9 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
 {
   hWndFPS              = GetDlgItem (hDlg, IDC_TARGET_FPS);
   hWndTiming           = GetDlgItem (hDlg, IDC_TARGET_METHOD);
+  hWndBattleFPS        = GetDlgItem (hDlg, IDC_BATTLE_TARGET_FPS);
+  hWndBattleTiming     = GetDlgItem (hDlg, IDC_BATTLE_TARGET_METHOD);
+  hWndCutsceneFPS      = GetDlgItem (hDlg, IDC_CUTSCENE_TARGET_FPS);
   hWndYieldProcessor   = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_YIELD);
   hWndAllowFakeSleep   = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_FAKESLEEP);
   hWndMinimizeLatency  = GetDlgItem (hDlg, IDC_TZFIX_FRAMERATE_MIN_LATENCY);
@@ -161,6 +204,31 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
   ComboBox_InsertString (hWndTiming, 1, L"Fixed-Tick");
 
   ComboBox_SetCurSel    (hWndTiming, (auto_adjust->get_value () == true ? 0 : 1));
+
+  ComboBox_ResetContent (hWndBattleFPS);
+
+  ComboBox_InsertString (hWndBattleFPS, 0, L"60 FPS");
+  ComboBox_InsertString (hWndBattleFPS, 1, L"30 FPS");
+  ComboBox_InsertString (hWndBattleFPS, 2, L"20 FPS");
+  ComboBox_InsertString (hWndBattleFPS, 3, L"15 FPS");
+  ComboBox_InsertString (hWndBattleFPS, 4, L"12 FPS");
+  ComboBox_InsertString (hWndBattleFPS, 5, L"10 FPS");
+
+  ComboBox_SetCurSel    (hWndBattleFPS, (battle_fps->get_value () / 60)-1);
+
+  ComboBox_ResetContent (hWndBattleTiming);
+
+  ComboBox_InsertString (hWndBattleTiming, 0, L"Adaptive (Auto-Adjust)");
+  ComboBox_InsertString (hWndBattleTiming, 1, L"Fixed-Tick");
+
+  ComboBox_SetCurSel    (hWndBattleTiming, (battle_adaptive->get_value () == true ? 0 : 1));
+
+  ComboBox_ResetContent (hWndCutsceneFPS);
+
+  ComboBox_InsertString (hWndCutsceneFPS, 0, L"60 FPS");
+  ComboBox_InsertString (hWndCutsceneFPS, 1, L"30 FPS");
+
+  ComboBox_SetCurSel    (hWndCutsceneFPS, (cutscene_fps->get_value () / 60)-1);
 
   yield_processor->bind_to_control (new tzt::UI::CheckBox (hWndYieldProcessor));
   yield_processor->set_value       (yield_processor->get_value ());
@@ -275,6 +343,21 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         (ComboBox_GetCurSel (framerate->hWndTiming) == 0)
       );
       framerate->auto_adjust->store ();
+
+      framerate->battle_fps->set_value (
+        (ComboBox_GetCurSel (framerate->hWndBattleFPS) + 1) * 60
+      );
+      framerate->battle_fps->store ();
+
+      framerate->battle_adaptive->set_value (
+        (ComboBox_GetCurSel (framerate->hWndBattleTiming) == 0)
+      );
+      framerate->battle_adaptive->store ();
+
+      framerate->cutscene_fps->set_value (
+        (ComboBox_GetCurSel (framerate->hWndCutsceneFPS) + 1) * 60
+      );
+      framerate->cutscene_fps->store ();
 
       framerate->yield_processor->store  ();
       framerate->allow_fake_sleep->store ();

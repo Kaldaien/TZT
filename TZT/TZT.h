@@ -84,6 +84,16 @@ public:
     rtss_ini->write  (rtss_path.c_str ());
   }
 
+  void reload_rtss (void) {
+    if (rtss_ini != nullptr)
+      delete rtss_ini;
+
+    std::wstring rtss_path = TZT_GetRTSSInstallDir ();
+    rtss_path += L"Profiles\\Tales of Zestiria.exe.cfg";
+
+    rtss_ini  = new tzt::INI::File (rtss_path.c_str ());
+  }
+
 
   std::wstring
   lookup_value (std::wstring section_name, std::wstring key_name) {

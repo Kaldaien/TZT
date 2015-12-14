@@ -36,7 +36,7 @@ public:
 //protected:
   tzt::ParameterInt*     stealth_mode;
   tzt::ParameterInt*     custom_d3d;
-  tzt::ParameterStringW* delay_trigger;
+  tzt::ParameterStringW* delay_triggers;
   tzt::ParameterInt*     delay_ms;
 
 //private:
@@ -51,11 +51,83 @@ public:
   HWND hWndRTSSGroup;
 } *osd = nullptr;
 
+static char default_rtss_profile [] = {
+  "[OSD]\n"
+  "EnableOSD=1\n"
+  "EnableBgnd=1\n"
+  "EnableStat=0\n"
+  "BaseColor=0080EE11\n"
+  "BgndColor=00000000\n"
+  "PositionX=1\n"
+  "PositionY=1\n"
+  "ZoomRatio=2\n"
+  "CoordinateSpace=0\n"
+  "EnableFrameColorBar=0\n"
+  "FrameColorBarsNum=1\n"
+  "\n"
+  "[Framerate]\n"
+  "Limit=0\n"
+  "\n"
+  "[Hooking]\n"
+  "EnableHooking=1\n"
+  "EnableFloatingInjectionAddress=1\n"
+  "EnableDynamicOffsetDetection=1\n"
+  "HookLoadLibrary=0\n"
+  "HookDirectDraw=0\n"
+  "HookDirect3D8=0\n"
+  "HookDirect3D9=1\n"
+  "HookDirect3DSwapChain9Present=0\n"
+  "HookDirect3DSwapChain9Present64=0\n"
+  "HookDXGI=0\n"
+  "HookOpenGL=0\n"
+  "InjectionDelay=10000\n"
+  "InjectionDelayTriggers=tzfix.dll\n"
+  "\n"
+  "[Font]\n"
+  "Weight=700\n"
+  "Face=Consolas\n"
+  "Load=\n"
+  "\n"
+  "[RendererDirect3D8]\n"
+  "Implementation=1\n"
+  "\n"
+  "[RendererDirect3D9]\n"
+  "Implementation=1\n"
+  "\n"
+  "[RendererDirect3D10]\n"
+  "Implementation=1\n"
+  "\n"
+  "[RendererDirect3D11]\n"
+  "Implementation=1\n"
+  "\n"
+  "[RendererOpenGL]\n"
+  "Implementation=1\n"
+  "\n"
+  "[Info]\n"
+  "Timestamp=14-12-2015, 16:56:34\n"
+};
+
 tzfixcfg_OSD::tzfixcfg_OSD (void)
 {
   tzt::INI::File* tzfix_ini = config.get_file_tzfix ();
   tzt::INI::File* d3d9_ini  = config.get_file_d3d9  ();
   tzt::INI::File* rtss_ini  = config.get_file_rtss  ();
+
+  if (rtss_ini->get_sections ().empty ()) {
+    std::wstring rtss_path = TZT_GetRTSSInstallDir ();
+    rtss_path += L"Profiles\\Tales of Zestiria.exe.cfg";
+
+    char szRTSSProfile [MAX_PATH];
+    sprintf (szRTSSProfile, "%ws", rtss_path);
+
+    FILE* fProfile = fopen (szRTSSProfile, "w");
+    if (fProfile != nullptr) {
+      fputs  (default_rtss_profile, fProfile);
+      fclose (fProfile);
+    }
+
+    config.reload_rtss ();
+  }
 
   stealth_mode = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
@@ -77,15 +149,15 @@ tzfixcfg_OSD::tzfixcfg_OSD (void)
                                     L"EnableDynamicOffsetDetection" );
   custom_d3d->load ();
 
-  delay_trigger = static_cast <tzt::ParameterStringW *> (
+  delay_triggers = static_cast <tzt::ParameterStringW *> (
     tzt::g_ParameterFactory.create_parameter <std::wstring> (
-      L"RTSS Delay Trigger"
+      L"RTSS Delay Triggers"
     )
   );
-  delay_trigger->register_to_ini ( rtss_ini,
+  delay_triggers->register_to_ini ( rtss_ini,
                                      L"Hooking",
-                                       L"InjectionDelayTrigger" );
-  delay_trigger->load ();
+                                       L"InjectionDelayTriggers" );
+  delay_triggers->load ();
 
   delay_ms = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
@@ -126,7 +198,7 @@ tzfixcfg_OSD::setup_ui (HWND hDlg)
   Button_Enable (hWndUseDelay,  installed);
   Button_Enable (hWndColor,     installed);
 
-  if (installed && delay_trigger->get_value ().length ()) {
+  if (installed && delay_triggers->get_value ().length ()) {
     EnableWindow    (hWndDelayLabel, installed);
     EnableWindow    (hWndDelayTime,  installed);
     Button_SetCheck (hWndUseDelay,   true);
@@ -186,9 +258,9 @@ OSDConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         EnableWindow (osd->hWndDelayTime,  delay);
 
         if (delay)
-          osd->delay_trigger->set_value (L"tzfix.dll");
+          osd->delay_triggers->set_value (L"tzfix.dll");
         else
-          osd->delay_trigger->set_value (L"");
+          osd->delay_triggers->set_value (L"");
       }
       if (LOWORD (wParam) == IDOK)
       {
@@ -201,8 +273,8 @@ OSDConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         osd->delay_ms->set_value_str (wszDelayMS);
         osd->delay_ms->set_value (osd->delay_ms->get_value () * 1000);
 
-        osd->delay_ms->store      ();
-        osd->delay_trigger->store ();
+        osd->delay_ms->store       ();
+        osd->delay_triggers->store ();
 
         EndDialog (hDlg, LOWORD (wParam));
         return (INT_PTR)TRUE;
