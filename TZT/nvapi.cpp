@@ -317,11 +317,9 @@ tzt::NVAPI::EnumGPUs_DXGI (void)
     adapterDesc.AdapterLuid.HighPart = sli_group;
     adapterDesc.AdapterLuid.LowPart  = sli_size;
 
-    // NVIDIA's driver measures these numbers in KiB (to store as a 32-bit int)
-    //  * We want the numbers in bytes (64-bit)
-    adapterDesc.DedicatedVideoMemory  = (size_t)meminfo.dedicatedVideoMemory * 1024;
-    adapterDesc.DedicatedSystemMemory = (size_t)meminfo.systemVideoMemory    * 1024;
-    adapterDesc.SharedSystemMemory    = (size_t)meminfo.sharedSystemMemory   * 1024;
+    adapterDesc.DedicatedVideoMemory  = (size_t)meminfo.dedicatedVideoMemory;
+    adapterDesc.DedicatedSystemMemory = (size_t)meminfo.systemVideoMemory;
+    adapterDesc.SharedSystemMemory    = (size_t)meminfo.sharedSystemMemory;
 
     _nv_dxgi_adapters [i] = adapterDesc;
   }

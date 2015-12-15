@@ -116,7 +116,7 @@ public:
     if (ui_control != nullptr)
       set_value_str (ui_control->get_value_str ());
 
-    wcsncpy_s (backing_string, get_value_str ().c_str (), 64);
+    wcsncpy_s (backing_string, get_value_str ().c_str (), MAX_PATH);
 
     if (cfg != nullptr) {
       CFG::File::Section& section = cfg->get_section (cfg_section);
@@ -172,7 +172,7 @@ public:
 
 protected:
   UI::Control*             ui_control;
-  wchar_t                  backing_string [64]; // Required by XML
+  wchar_t                  backing_string [MAX_PATH]; // Required by XML
 
 private:
   CFG::File*               cfg;
@@ -279,7 +279,7 @@ extern tzt::ParameterInt*     res_y;
 
 //extern tzt::ParameterInt* max_fps;
 
-extern tzt::ParameterBool*    use_vsync;
+extern tzt::ParameterInt*     use_vsync;
 
 extern tzt::ParameterInt*     anisotropy;
 extern tzt::ParameterInt*     texture_res;

@@ -217,6 +217,8 @@ HRESULT SelectIntroVideo (void)
         if (SUCCEEDED (hr)) {
           hr = pfd->SetOptions (dwFlags | FOS_FORCEFILESYSTEM);
 
+          //FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_STRICTFILETYPES
+
           if (SUCCEEDED (hr)) {
             COMDLG_FILTERSPEC rgSpec [] = {
                 { L"Bink2 Video (.bk2)", L"*.bk2" },

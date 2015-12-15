@@ -344,6 +344,7 @@ void setup_tex_filter (HWND hDlg)
   ComboBox_InsertString (hWndAnisotropy, 4, L"16x Anisotropic");
 
   switch (anisotropy->get_value ()) {
+    case 0:
     case 1:
       // 1 sample = Bilinear + Linear/Point filter on Mip
       ComboBox_SetCurSel (hWndAnisotropy, 0);
@@ -375,7 +376,7 @@ int get_tex_filter (HWND hDlg)
   int sel = ComboBox_GetCurSel (GetDlgItem (hDlg, IDC_ANISOTROPY));
 
   if (sel == 0)
-    return 1;
+    return 0; // 1 is trilinear, but the game uses 0
   else if (sel == 1)
     return 2;
   else if (sel == 2)
@@ -711,8 +712,8 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
           //);
 
         use_vsync =
-          static_cast <ParameterBool *> (
-            g_ParameterFactory.create_parameter <bool> (L"Use VSYNC")
+          static_cast <ParameterInt *> (
+            g_ParameterFactory.create_parameter <int> (L"Use VSYNC")
           );
 
         // In some APIs this is a float, but let's just keep things simple (int).

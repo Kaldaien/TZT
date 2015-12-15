@@ -327,7 +327,7 @@ tzt::ParameterInt*     refresh_rate;
 tzt::ParameterInt*     res_x;
 tzt::ParameterInt*     res_y;
 
-tzt::ParameterBool*    use_vsync;
+tzt::ParameterInt*     use_vsync;
 
 tzt::ParameterInt*     anisotropy;
 tzt::ParameterInt*     texture_res;
