@@ -336,23 +336,33 @@ DXGI::GetGPUInfo (void)
       NV_GPU_CLOCK_FREQUENCIES freq;
       freq.version = NV_GPU_CLOCK_FREQUENCIES_VER;
 
+      float base_gpu = 0.0f;
+      float base_mem = 0.0f;
+
+      // Base Clock (may not be supported by all GPUs)
       freq.ClockType = NV_GPU_CLOCK_FREQUENCIES_BASE_CLOCK;
-      NVAPI_CALL (GPU_GetAllClockFrequencies (gpus [i], &freq));
 
-      float base_gpu = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS].frequency / 1000.0f / 1000.0f;
-      float base_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency / 1000.0f / 1000.0f;
+      if (NvAPI_GPU_GetAllClockFrequencies (gpus [i], &freq) == NVAPI_OK) {
+        base_gpu = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS].frequency / 1000.0f / 1000.0f;
+        base_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency   / 1000.0f / 1000.0f;
+      }
 
+      float boost_gpu = 0.0f;
+      float boost_mem = 0.0f;
+
+      // Boost Clock (may not be supported by all GPUs)
       freq.ClockType = NV_GPU_CLOCK_FREQUENCIES_BOOST_CLOCK;
-      NVAPI_CALL (GPU_GetAllClockFrequencies (gpus [i], &freq));
 
-      float boost_gpu = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS].frequency / 1000.0f / 1000.0f;
-      float boost_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency / 1000.0f / 1000.0f;
+      if (NvAPI_GPU_GetAllClockFrequencies (gpus [i], &freq) == NVAPI_OK) {
+        boost_gpu = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS].frequency / 1000.0f / 1000.0f;
+        boost_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency   / 1000.0f / 1000.0f;
+      }
 
       freq.ClockType = NV_GPU_CLOCK_FREQUENCIES_CURRENT_FREQ;
       NVAPI_CALL (GPU_GetAllClockFrequencies (gpus [i], &freq));
 
       float current_gpu = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS].frequency / 1000.0f / 1000.0f;
-      float current_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency / 1000.0f / 1000.0f;
+      float current_mem = (float)freq.domain [NVAPI_GPU_PUBLIC_CLOCK_MEMORY].frequency   / 1000.0f / 1000.0f;
 
       NvU32 cuda_cores;
       NVAPI_CALL (GPU_GetGpuCoreCount (gpus [i], &cuda_cores));
@@ -378,10 +388,10 @@ DXGI::GetGPUInfo (void)
 
       NvU32 mem_parts;
 
-      NVAPI_CALL (GPU_GetShaderPipeCount (gpus [i], &pipes));
+      NVAPI_CALL (GPU_GetShaderPipeCount    (gpus [i], &pipes));
       NVAPI_CALL (GPU_GetShaderSubPipeCount (gpus [i], &subpipes));
       NVAPI_CALL (GPU_GetFBWidthAndLocation (gpus [i], &memory_type.width, &memory_type.location));
-      NVAPI_CALL (GPU_GetPartitionCount (gpus [i], &mem_parts));
+      NVAPI_CALL (GPU_GetPartitionCount     (gpus [i], &mem_parts));
 
       NvU32 serial;
       NVAPI_CALL (GPU_GetSerialNumber (gpus [i], &serial));
