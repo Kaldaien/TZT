@@ -335,7 +335,7 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       );
 
       framerate->fps->set_value (
-        (ComboBox_GetCurSel (framerate->hWndFPS) + 1) * 60
+        60 / (ComboBox_GetCurSel (framerate->hWndFPS) + 1)
       );
       framerate->fps->store ();
 
@@ -345,7 +345,7 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       framerate->auto_adjust->store ();
 
       framerate->battle_fps->set_value (
-        (ComboBox_GetCurSel (framerate->hWndBattleFPS) + 1) * 60
+        60 / (ComboBox_GetCurSel (framerate->hWndBattleFPS) + 1)
       );
       framerate->battle_fps->store ();
 
@@ -355,7 +355,7 @@ FramerateConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       framerate->battle_adaptive->store ();
 
       framerate->cutscene_fps->set_value (
-        (ComboBox_GetCurSel (framerate->hWndCutsceneFPS) + 1) * 60
+        60 / (ComboBox_GetCurSel (framerate->hWndCutsceneFPS) + 1)
       );
       framerate->cutscene_fps->store ();
 
