@@ -40,7 +40,7 @@
 
 using namespace tzt;
 
-#define TZT_VERSION_STR L"1.0.3"
+#define TZT_VERSION_STR L"1.0.5"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
