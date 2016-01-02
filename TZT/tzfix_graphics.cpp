@@ -84,14 +84,14 @@ tzfixcfg_Graphics::tzfixcfg_Graphics (void)
                                        L"TZFIX.Render",
                                          L"ClearBlackbars" );
 
-  complete_mipmaps = static_cast <tzt::ParameterBool *> (
-    tzt::g_ParameterFactory.create_parameter <bool> (
-      L"Force Complete Mipmaps"
-    )
-  );
-  complete_mipmaps->register_to_ini ( tzfix_ini,
-                                        L"TZFIX.Render",
-                                          L"CompleteMipmaps" );
+  //complete_mipmaps = static_cast <tzt::ParameterBool *> (
+    //tzt::g_ParameterFactory.create_parameter <bool> (
+      //L"Force Complete Mipmaps"
+    //)
+  //);
+  //complete_mipmaps->register_to_ini ( tzfix_ini,
+                                        //L"TZFIX.Render",
+                                          //L"CompleteMipmaps" );
 
   shadow_scale = static_cast <tzt::ParameterInt *> (
     tzt::g_ParameterFactory.create_parameter <int> (
@@ -124,7 +124,7 @@ tzfixcfg_Graphics::tzfixcfg_Graphics (void)
   aspect_correct_ui->load     ();
   clear_blackbars->load       ();
 
-  complete_mipmaps->load      ();
+  //complete_mipmaps->load      ();
 
   shadow_scale->load          ();
   postprocess_ratio->load     ();
@@ -142,14 +142,16 @@ tzfixcfg_Graphics::setup_ui (HWND hDlg)
   hWndDoubleResSorey        = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_DOUBLE_RES_SOREY);
   hWndForceCompleteMipMaps  = GetDlgItem (hDlg, IDC_TZFIX_GRAPHICS_FORCE_MIPMAPS);
 
+  ShowWindow (hWndForceCompleteMipMaps, SW_HIDE);
+
   clear_blackbars->bind_to_control (new tzt::UI::CheckBox (hWndClearBlackbars));
   clear_blackbars->set_value (clear_blackbars->get_value ());
 
   postprocess_ratio->bind_to_control (new tzt::UI::EditBox (hWndPostProcessScale));
   postprocess_ratio->set_value (postprocess_ratio->get_value ());
 
-  complete_mipmaps->bind_to_control (new tzt::UI::CheckBox (hWndForceCompleteMipMaps));
-  complete_mipmaps->set_value (complete_mipmaps->get_value ());
+  //complete_mipmaps->bind_to_control (new tzt::UI::CheckBox (hWndForceCompleteMipMaps));
+  //complete_mipmaps->set_value (complete_mipmaps->get_value ());
 
   ComboBox_ResetContent (hWndAspectRatioCorrection);
   ComboBox_ResetContent (hWndShadowRes);
@@ -324,7 +326,7 @@ GraphicsConfig (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         graphics->aspect_correct_ui->store     ();
         graphics->clear_blackbars->store       ();
 
-        graphics->complete_mipmaps->store      ();
+        //graphics->complete_mipmaps->store      ();
 
         graphics->shadow_scale->store          ();
         graphics->postprocess_ratio->store     ();

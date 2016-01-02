@@ -75,8 +75,11 @@ public:
   void save (std::wstring path) {
     cfg->write (std::wstring (path + std::wstring (L"TOZ.CFG")).c_str ());
 
-    tzfix_ini->write (L"tzfix.ini");
-    d3d9_ini->write  (L"d3d9.ini");
+    if (! (tzfix_ini->get_sections ().empty () ||
+           d3d9_ini->get_sections  ().empty ())) {
+      tzfix_ini->write (L"tzfix.ini");
+      d3d9_ini->write  (L"d3d9.ini");
+    }
 
     std::wstring rtss_path = TZT_GetRTSSInstallDir ();
     rtss_path += L"Profiles\\Tales of Zestiria.exe.cfg";

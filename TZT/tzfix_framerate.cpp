@@ -196,7 +196,7 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
   ComboBox_InsertString (hWndFPS, 4, L"12 FPS");
   ComboBox_InsertString (hWndFPS, 5, L"10 FPS");
 
-  ComboBox_SetCurSel    (hWndFPS, (60 / fps->get_value ())-1);
+  ComboBox_SetCurSel    (hWndFPS, min (5, (60 / max (fps->get_value (), 1))-1));
 
   ComboBox_ResetContent (hWndTiming);
 
@@ -214,7 +214,7 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
   ComboBox_InsertString (hWndBattleFPS, 4, L"12 FPS");
   ComboBox_InsertString (hWndBattleFPS, 5, L"10 FPS");
 
-  ComboBox_SetCurSel    (hWndBattleFPS, (60 / battle_fps->get_value ())-1);
+  ComboBox_SetCurSel    (hWndBattleFPS, min (5, (60 / max (battle_fps->get_value (), 1))-1));
 
   ComboBox_ResetContent (hWndBattleTiming);
 
@@ -228,7 +228,7 @@ tzfixcfg_Framerate::setup_ui (HWND hDlg)
   ComboBox_InsertString (hWndCutsceneFPS, 0, L"60 FPS");
   ComboBox_InsertString (hWndCutsceneFPS, 1, L"30 FPS");
 
-  ComboBox_SetCurSel    (hWndCutsceneFPS, (60 / cutscene_fps->get_value ())-1);
+  ComboBox_SetCurSel    (hWndCutsceneFPS, min (1, (60 / max (cutscene_fps->get_value (), 1))-1));
 
   yield_processor->bind_to_control (new tzt::UI::CheckBox (hWndYieldProcessor));
   yield_processor->set_value       (yield_processor->get_value ());

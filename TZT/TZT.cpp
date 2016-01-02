@@ -40,7 +40,7 @@
 
 using namespace tzt;
 
-#define TZT_VERSION_STR L"1.0.5"
+#define TZT_VERSION_STR L"1.0.6"
 
 INT_PTR CALLBACK  Config (HWND, UINT, WPARAM, LPARAM);
 
@@ -72,6 +72,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE     hInstance,
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
   UNREFERENCED_PARAMETER (nCmdShow);
+
+  CoInitialize (NULL);
 
   tzt_icon   = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_TZT));
   steam_icon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_STEAM));
@@ -823,7 +825,6 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
       setup_draw_distance    (hDlg);
 
       setup_driver_tweaks    (hDlg);
-      setup_tzfix_config     (hDlg);
 
       //setup_config_status    (hDlg);
       //setup_framerate_limiting (hDlg);
@@ -872,9 +873,17 @@ Config (HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         handle_window_radios (hDlg, IDC_FULLSCREEN);
       }
 
-      first_load = false;
+      // Leave an empty space where the Community Patch Config tab dialog should
+      //   be if TZT.exe is not run from the correct directory.
+      if (! (config.get_file_tzfix ()->get_sections ().empty () ||
+             config.get_file_d3d9  ()->get_sections ().empty ())) {
+        setup_tzfix_config   (hDlg);
+        hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
+      } else {
+        EnableWindow (GetDlgItem (hDlg, IDC_TZFIX_TABS), FALSE);
+      }
 
-hWndTZFIXTab = CreateDialog (GetWindowInstance (hDlg), MAKEINTRESOURCE (IDD_AUDIO), hDlg, AudioConfig);
+      first_load = false;
 
       return (INT_PTR)TRUE;
     }

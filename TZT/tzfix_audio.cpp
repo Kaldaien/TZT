@@ -65,7 +65,7 @@ public:
 #include <dsound.h>
 #pragma comment (lib, "dsound.lib")
 
-wchar_t wszConfigStatus [16384];
+wchar_t wszConfigStatus [16384] = { L"\0" };
 
 const wchar_t*
 dsound_channel_config_name (DWORD dwLayout)
@@ -123,14 +123,14 @@ void
 setup_config_status (HWND hDlg)
 {
   PROPVARIANT     property;
-  WAVEFORMATEX*   pMixFormat;
+  WAVEFORMATEX*   pMixFormat = nullptr;
 
   wchar_t* pwszStat = wszConfigStatus;
 
   //pwszStat += swprintf (pwszStat, L"Creating Default DirectSound Device... ");
 
-  LPDIRECTSOUND8 pDS;
-  if (SUCCEEDED (DirectSoundCreate8 (NULL, &pDS, NULL))) {
+  LPDIRECTSOUND pDS = nullptr;
+  if (SUCCEEDED (DirectSoundCreate (NULL, &pDS, NULL)) && pDS != nullptr) {
     pDS->Initialize (NULL);
     //pwszStat += swprintf (pwszStat, L"Success!\r\n");
 
@@ -160,8 +160,6 @@ setup_config_status (HWND hDlg)
     }
 
     IMMDeviceEnumerator* pEnumerator;
-
-    CoInitialize (NULL);
 
     const CLSID CLSID_MMDeviceEnumerator = __uuidof (MMDeviceEnumerator);
     const IID   IID_IMMDeviceEnumerator  = __uuidof (IMMDeviceEnumerator);
@@ -239,18 +237,23 @@ setup_config_status (HWND hDlg)
     pDS->Release ();
     //pwszStat += swprintf (pwszStat, L"done!\r\n");
   } else {
-    //pwszStat += swprintf (pwszStat, L"Failed!\r\n");
+    pwszStat += swprintf (pwszStat, L"Failed to Create DirectSound Device!\r\n");
+    Edit_SetText (GetDlgItem (hDlg, IDC_TZFIX_AUDIO_STATUS), wszConfigStatus);
   }
 
   pwszStat += swprintf (pwszStat, L"---------------------------------------------\r\n");
 
-  if (pMixFormat->nSamplesPerSec > 48000) {
-    pwszStat += swprintf (pwszStat, L"Your audio configuration *REQUIRES* the Audio Fix.");
+  if (pMixFormat != nullptr) {
+    if (pMixFormat->nSamplesPerSec > 48000) {
+      pwszStat += swprintf (pwszStat, L"Your audio configuration *REQUIRES* the Audio Fix.");
+    } else {
+      if (pMixFormat->nChannels > 6)
+        pwszStat += swprintf (pwszStat, L"Your audio configuration _MAY_ require the Audio Fix.");
+      else
+        pwszStat += swprintf (pwszStat, L"Your audio configuration *DOES NOT* require the Audio Fix.");
+    }
   } else {
-    if (pMixFormat->nChannels > 6)
-      pwszStat += swprintf (pwszStat, L"Your audio configuration _MAY_ require the Audio Fix.");
-    else
-      pwszStat += swprintf (pwszStat, L"Your audio configuration *DOES NOT* require the Audio Fix.");
+    pwszStat += swprintf (pwszStat, L"Your audio configuration is *UNKNOWN*, game may crash.");
   }
 
   Edit_SetText (GetDlgItem (hDlg, IDC_TZFIX_AUDIO_STATUS), wszConfigStatus);
